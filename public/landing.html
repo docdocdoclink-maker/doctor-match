@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DocLink｜業界最安クラス、医師にも病院にもやさしい求人サイト</title>
+<style>
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
+  color: #16202e;
+  background: #fff;
+}
+a { color: inherit; text-decoration: none; }
+
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid #eef0f3;
+}
+.nav-inner {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.nav-brand { font-weight: 800; font-size: 19px; color: #122c66; letter-spacing: -0.3px; }
+.nav-links { display: flex; gap: 26px; font-size: 14px; color: #4b5768; }
+.nav-links a:hover { color: #1a56db; }
+.nav-cta {
+  background: linear-gradient(135deg, #1a56db, #0d9488);
+  color: #fff;
+  padding: 9px 18px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  background-image: url('images/hero.jpg');
+  background-size: cover;
+  background-position: center 65%;
+  padding: 84px 24px 70px;
+}
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.55) 26%, rgba(255,255,255,0.88) 55%, rgba(255,255,255,0.97) 100%);
+}
+.float-badge {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  border-radius: 16px;
+  padding: 12px 18px;
+  box-shadow: 0 14px 32px rgba(20,30,60,0.14);
+  font-size: 13px;
+  font-weight: 800;
+  color: #0d1b33;
+  z-index: 1;
+}
+.float-badge .icon-circle {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px;
+  flex-shrink: 0;
+}
+.float-badge.b1 { top: 42px; right: 3%; }
+.float-badge.b1 .icon-circle { background: #e0edff; }
+.float-badge.b2 { top: 42px; left: 3%; }
+.float-badge.b2 .icon-circle { background: #d9f7f0; }
+.float-badge.b3 { top: 108px; left: 3%; }
+.float-badge.b3 .icon-circle { background: #fff0d9; }
+@media (max-width: 1180px) {
+  .float-badge { display: none; }
+}
+.hero-inner {
+  position: relative;
+  max-width: 1080px;
+  margin: 0 auto;
+  text-align: center;
+}
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #fff3da, #ffe3d6);
+  color: #b8560c;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 8px 18px;
+  border-radius: 999px;
+  margin-bottom: 24px;
+  letter-spacing: 0.3px;
+}
+.hero h1 {
+  font-size: 50px;
+  line-height: 1.3;
+  margin: 0 0 22px;
+  font-weight: 900;
+  letter-spacing: -1px;
+  color: #0d1b33;
+}
+.hero h1 .accent-blue { color: #1a56db; }
+.hero h1 .accent-teal { color: #0d9488; }
+.hero-sub {
+  font-size: 17px;
+  color: #4b5768;
+  max-width: 600px;
+  margin: 0 auto 36px;
+  line-height: 1.85;
+}
+.hero-sub strong { color: #0d1b33; font-weight: 800; }
+.hero-ctas {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 32px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  border: none;
+}
+.btn-doctor { background: linear-gradient(135deg, #1a56db, #2f6fee); color: #fff; box-shadow: 0 12px 26px rgba(26,86,219,0.32); }
+.btn-doctor:hover { filter: brightness(1.05); }
+.btn-hospital { background: linear-gradient(135deg, #0d9488, #14b8a6); color: #fff; box-shadow: 0 12px 26px rgba(13,148,136,0.3); }
+.btn-hospital:hover { filter: brightness(1.05); }
+.hero-note { font-size: 12.5px; color: #8a97a8; font-weight: 600; }
+
+.stats {
+  max-width: 920px;
+  margin: 60px auto 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  position: relative;
+}
+.stat-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 26px 18px;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(20,30,60,0.07);
+  border-top: 5px solid #1a56db;
+}
+.stat-card.teal { border-top-color: #0d9488; }
+.stat-card.amber { border-top-color: #f59e0b; }
+.stat-num { font-size: 40px; font-weight: 900; color: #0d1b33; letter-spacing: -1px; }
+.stat-card.blueNum .stat-num { color: #1a56db; }
+.stat-card.teal .stat-num { color: #0d9488; }
+.stat-card.amber .stat-num { color: #b8560c; }
+.stat-num .unit { font-size: 15px; font-weight: 800; margin-left: 2px; }
+.stat-label { font-size: 12.5px; color: #7c8aa0; margin-top: 8px; font-weight: 700; }
+
+.section { max-width: 1080px; margin: 0 auto; padding: 92px 24px; }
+.section-head { text-align: center; max-width: 600px; margin: 0 auto 52px; }
+.section-tag {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+  padding: 5px 14px;
+  border-radius: 999px;
+}
+.section-tag.blue { color: #1a56db; background: #e9f0ff; }
+.section-tag.red { color: #c0392b; background: #fdeceb; }
+.section-head h2 { font-size: 34px; margin: 0 0 16px; color: #0d1b33; letter-spacing: -0.6px; font-weight: 900; }
+.section-head p { color: #5c6b80; font-size: 15.5px; line-height: 1.85; margin: 0; }
+
+.value-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+}
+.value-card {
+  background: #fafbfd;
+  border-radius: 18px;
+  padding: 34px 26px;
+  border: 1px solid #eef0f3;
+}
+.value-card.c1 { background: linear-gradient(160deg, #eef5ff, #fafbff); }
+.value-card.c2 { background: linear-gradient(160deg, #eafaf6, #fafffe); }
+.value-card.c3 { background: linear-gradient(160deg, #fff6e8, #fffdf8); }
+.value-icon {
+  width: 54px; height: 54px;
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px;
+  margin-bottom: 20px;
+  box-shadow: 0 6px 16px rgba(20,30,60,0.1);
+}
+.value-card.c1 .value-icon { background: #1a56db; }
+.value-card.c2 .value-icon { background: #0d9488; }
+.value-card.c3 .value-icon { background: #f59e0b; }
+.value-card h3 { font-size: 19px; margin: 0 0 12px; color: #0d1b33; font-weight: 800; }
+.value-card p { font-size: 14px; color: #5c6b80; line-height: 1.85; margin: 0; }
+.value-card .big { display: block; font-size: 22px; font-weight: 900; line-height: 1.4; margin: 8px 0; }
+.value-card.c1 .big { color: #1a56db; }
+.value-card.c2 .big { color: #0d9488; }
+.value-card.c3 .big { color: #b8560c; }
+
+.compare {
+  background: linear-gradient(160deg, #0d1b33, #12305e);
+  border-radius: 28px;
+  padding: 58px 40px;
+  color: #fff;
+}
+.compare-head { text-align: center; margin-bottom: 42px; }
+.compare-head h2 { color: #fff; font-size: 30px; margin: 0 0 12px; font-weight: 900; }
+.compare-head p { color: #a6b3c9; }
+.compare-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+.compare-card {
+  border-radius: 18px;
+  padding: 30px 26px;
+  position: relative;
+}
+.compare-card.old { background: linear-gradient(160deg, rgba(220,60,50,0.16), rgba(220,60,50,0.05)); border: 1.5px solid rgba(220,80,70,0.35); }
+.compare-card.new { background: linear-gradient(135deg, #16b981, #0d9488 55%, #059669); box-shadow: 0 16px 36px rgba(5,150,105,0.35); }
+.compare-card .label { font-size: 12.5px; font-weight: 800; opacity: 0.85; margin-bottom: 12px; letter-spacing: 0.5px; }
+.compare-card.old .label { color: #ffb4ab; }
+.compare-card .price { font-size: 44px; font-weight: 900; margin-bottom: 8px; letter-spacing: -1px; }
+.compare-card.old .price { color: #ff8a7a; }
+.compare-card .price .sub { font-size: 15px; font-weight: 700; opacity: 0.9; }
+.compare-card .desc { font-size: 13.5px; opacity: 0.92; line-height: 1.75; }
+.compare-card .ribbon {
+  position: absolute;
+  top: -14px;
+  right: 20px;
+  background: #ffd54a;
+  color: #6b4a00;
+  font-size: 12px;
+  font-weight: 900;
+  padding: 6px 14px;
+  border-radius: 999px;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.25);
+}
+.compare-savings {
+  text-align: center;
+  margin-top: 32px;
+  font-size: 15px;
+  font-weight: 800;
+  color: #ffe28a;
+}
+.compare-savings .num { font-size: 22px; color: #ffd54a; }
+
+.how-grid {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap: 48px;
+  align-items: center;
+}
+.how-photo {
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 20px 44px rgba(20,30,60,0.14);
+}
+.how-photo img { display: block; width: 100%; height: 100%; object-fit: cover; }
+@media (max-width: 860px) {
+  .how-grid { grid-template-columns: 1fr; }
+  .how-photo { max-height: 260px; }
+}
+
+.steps { display: flex; flex-direction: column; gap: 20px; }
+.step-card { text-align: left; padding: 0; display: flex; gap: 16px; align-items: flex-start; }
+.step-num {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1a56db, #0d9488);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 900;
+  font-size: 16px;
+  flex-shrink: 0;
+  box-shadow: 0 8px 18px rgba(26,86,219,0.28);
+}
+.step-card h3 { font-size: 16px; margin: 0 0 6px; color: #0d1b33; font-weight: 800; }
+.step-card p { font-size: 13.5px; color: #5c6b80; line-height: 1.75; margin: 0; }
+
+.tabs { display: flex; justify-content: flex-start; gap: 10px; margin-bottom: 28px; }
+.tab-btn {
+  padding: 10px 22px;
+  border-radius: 999px;
+  border: 1.5px solid #d7deea;
+  background: #fff;
+  color: #57687f;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.tab-btn.active { background: linear-gradient(135deg, #1a56db, #0d9488); color: #fff; border-color: transparent; }
+.tab-panel { display: none; }
+.tab-panel.active { display: grid; }
+
+.problem-section {
+  background: linear-gradient(180deg, #fff8f6 0%, #ffffff 100%);
+  padding: 92px 24px;
+}
+.problem-inner { max-width: 1080px; margin: 0 auto; }
+.mission-grid {
+  display: grid;
+  grid-template-columns: 1fr 0.8fr;
+  gap: 44px;
+  align-items: center;
+  margin-bottom: 48px;
+}
+.mission-grid .section-head { text-align: left; margin: 0 0 28px; max-width: none; }
+.mission-photo {
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 20px 44px rgba(120,60,50,0.14);
+}
+.mission-photo img { display: block; width: 100%; height: 100%; object-fit: cover; }
+@media (max-width: 860px) {
+  .mission-grid { grid-template-columns: 1fr; }
+  .mission-grid .section-head { text-align: center; }
+  .mission-photo { max-height: 240px; }
+}
+.problem-quote {
+  background: #fff;
+  border: 1.5px solid #f7d9d4;
+  border-radius: 18px;
+  padding: 26px 30px;
+  margin: 0 auto 48px;
+  max-width: 760px;
+  font-size: 14.5px;
+  color: #7a3a30;
+  line-height: 1.9;
+  position: relative;
+}
+.problem-quote .qmark { font-size: 40px; color: #e8a99f; font-weight: 900; line-height: 0.5; margin-right: 4px; }
+.problem-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+}
+.problem-card {
+  background: #fff;
+  border-radius: 18px;
+  padding: 32px 26px;
+  border: 1px solid #fbe4df;
+}
+.problem-icon {
+  width: 54px; height: 54px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #e74c3c, #f39c12);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px;
+  margin-bottom: 20px;
+  box-shadow: 0 6px 16px rgba(231,76,60,0.22);
+}
+.problem-card h3 { font-size: 17px; margin: 0 0 10px; color: #0d1b33; font-weight: 800; }
+.problem-card p { font-size: 13.5px; color: #5c6b80; line-height: 1.85; margin: 0; }
+.problem-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+  margin-bottom: 48px;
+}
+.problem-stat {
+  background: linear-gradient(135deg, #fff0ed, #fff8f6);
+  border-radius: 16px;
+  padding: 22px 24px;
+  text-align: center;
+}
+.problem-stat .num { font-size: 36px; font-weight: 900; color: #c0392b; letter-spacing: -1px; }
+.problem-stat .num .unit { font-size: 15px; font-weight: 800; }
+.problem-stat .label { font-size: 12.5px; color: #8a5750; font-weight: 700; margin-top: 6px; }
+
+.legal-note {
+  background: linear-gradient(135deg, #fff8e6, #fffdf5);
+  border: 1px solid #ffe8ad;
+  border-radius: 16px;
+  padding: 22px 26px;
+  font-size: 13px;
+  color: #7a5b00;
+  line-height: 1.85;
+  max-width: 1080px;
+  margin: 0 auto 100px;
+}
+.legal-note strong { color: #5c4400; }
+
+.cta-band {
+  background: linear-gradient(135deg, #12305e, #1a56db 55%, #0d9488);
+  padding: 84px 24px;
+  text-align: center;
+}
+.cta-band h2 { color: #fff; font-size: 32px; margin: 0 0 14px; letter-spacing: -0.6px; font-weight: 900; }
+.cta-band p { color: #d8e8ff; font-size: 15.5px; margin: 0 0 36px; }
+.cta-band .hero-ctas { margin-bottom: 0; }
+.cta-band .btn-doctor { background: #fff; color: #12305e; box-shadow: none; }
+.cta-band .btn-hospital { background: rgba(255,255,255,0.14); color: #fff; border: 1.5px solid rgba(255,255,255,0.5); box-shadow: none; }
+
+footer {
+  padding: 44px 24px;
+  text-align: center;
+  color: #9aa6b8;
+  font-size: 12px;
+}
+footer .badge {
+  display: inline-block;
+  background: #fff3cd;
+  color: #92700a;
+  padding: 3px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+@media (max-width: 760px) {
+  .nav-links { display: none; }
+  .hero h1 { font-size: 32px; }
+  .hero-sub { font-size: 15px; }
+  .stats { grid-template-columns: 1fr; }
+  .value-grid { grid-template-columns: 1fr; }
+  .compare-grid { grid-template-columns: 1fr; }
+  .steps { grid-template-columns: 1fr; }
+  .problem-grid { grid-template-columns: 1fr; }
+  .problem-stats { grid-template-columns: 1fr; }
+  .section { padding: 64px 20px; }
+  .problem-section { padding: 64px 20px; }
+  .compare { padding: 36px 22px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="nav-brand">DocLink</div>
+    <div class="nav-links">
+      <a href="#value">選ばれる理由</a>
+      <a href="#compare">手数料比較</a>
+      <a href="#how">使い方</a>
+      <a href="#problem">私たちの想い</a>
+    </div>
+    <a class="nav-cta" href="/signup?role=doctor">求人を見る</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="float-badge b1"><span class="icon-circle">🩺</span>医師 登録・成約 完全無料</div>
+  <div class="float-badge b2"><span class="icon-circle">💬</span>病院と直接チャット</div>
+  <div class="float-badge b3"><span class="icon-circle">💰</span>手数料は5,000円〜2万円（定額）</div>
+
+  <div class="hero-inner">
+    <span class="eyebrow">🩺 関東エリア・非常勤/当直バイト特化</span>
+    <h1><span class="accent-blue">業界最安クラス。</span><br>医師にも、病院にも、<span class="accent-teal">とことんやさしく。</span></h1>
+    <p class="hero-sub">求人の掲載も閲覧も<strong>ずっと無料</strong>。手数料は成約時のみ、しかも<strong>5,000円〜2万円の定額</strong>（求人形態により決定）。医師は登録から成約まで完全無料で使えます。<strong>不要な仲介手数料を削減し、その分を病院の経営と医師の待遇にそのまま還元する</strong>——それがDocLinkの仕組みです。</p>
+    <div class="hero-ctas">
+      <a class="btn btn-doctor" href="/signup?role=doctor">🩺 医師の方はこちら（無料）</a>
+      <a class="btn btn-hospital" href="/signup?role=hospital">🏥 病院の方はこちら（無料掲載）</a>
+    </div>
+    <div class="hero-note">クレジットカード登録不要・会員登録なしですぐ求人を見られます</div>
+
+    <div class="stats">
+      <div class="stat-card blueNum">
+        <div class="stat-num">0<span class="unit">円</span></div>
+        <div class="stat-label">求人掲載費・閲覧費（ずっと）</div>
+      </div>
+      <div class="stat-card teal">
+        <div class="stat-num">5千〜2<span class="unit">万円</span></div>
+        <div class="stat-label">成約時の手数料（形態別定額・業界最安クラス）</div>
+      </div>
+      <div class="stat-card amber">
+        <div class="stat-num">直接<span class="unit">連絡</span></div>
+        <div class="stat-label">病院と医師がチャットで直接やり取り</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="section" id="value">
+  <div class="section-head">
+    <div class="section-tag blue">Why DocLink</div>
+    <h2>働く人にも、雇う側にもやさしい理由</h2>
+    <p>既存の人材紹介にありがちな「高い」「遅い」「不透明」を、シンプルな仕組みで解決します。</p>
+  </div>
+  <div class="value-grid">
+    <div class="value-card c1">
+      <div class="value-icon">💰</div>
+      <h3>圧倒的な低価格</h3>
+      <p>一般的な人材紹介の手数料は年収の<span class="big">25〜35%</span>。DocLinkは成約時のみ定額なので、病院側の負担を大幅に抑えられます。</p>
+    </div>
+    <div class="value-card c2">
+      <div class="value-icon">💬</div>
+      <h3>直接チャットでスピード解決</h3>
+      <p>気になる条件はサイト内チャットで病院に直接質問できます。仲介者を挟まないので、<span class="big">やり取りがそのまま早さ</span>につながります。</p>
+    </div>
+    <div class="value-card c3">
+      <div class="value-icon">🔔</div>
+      <h3>求人アラートで探す手間なし</h3>
+      <p>エリア・診療科・形態を登録しておけば、条件に合う新着求人を自動でお知らせ。もちろん<span class="big">全求人はいつでも自由</span>に検索・閲覧できます。</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="compare">
+  <div class="compare">
+    <div class="compare-head">
+      <div class="section-tag blue" style="background:rgba(255,255,255,0.12); color:#8fc3ff;">Fee Comparison</div>
+      <h2>手数料、これだけ違います</h2>
+      <p>日当8万円の非常勤バイト1件が成約した場合のシミュレーション</p>
+    </div>
+    <div class="compare-grid">
+      <div class="compare-card old">
+        <div class="label">😓 一般的な人材紹介会社</div>
+        <div class="price">〜80<span class="sub">万円前後</span></div>
+        <div class="desc">紹介手数料は理論年収の25〜35%が相場。非常勤・スポットの採用でも高額な手数料が発生するケースがあります。</div>
+      </div>
+      <div class="compare-card new">
+        <div class="ribbon">🏆 業界最安クラス</div>
+        <div class="label">✅ DocLink</div>
+        <div class="price">1<span class="sub">万円（定額）</span></div>
+        <div class="desc">求人掲載・閲覧は完全無料。手数料が発生するのは成約が決まった時だけ、しかも形態別の定額（スポット・当直5,000円／非常勤1万円／常勤2万円）なので採用コストを事前に把握できます。</div>
+      </div>
+    </div>
+    <div class="compare-savings">不要な仲介手数料を削減し、その分を病院と医師に還元 —— 差額は最大<span class="num">79万円</span></div>
+  </div>
+</section>
+
+<section class="section" id="how">
+  <div class="section-head">
+    <div class="section-tag blue">How it works</div>
+    <h2>使い方はとてもシンプル</h2>
+  </div>
+
+  <div class="how-grid">
+    <div class="how-photo">
+      <img src="images/feature.jpg" alt="ノートパソコンで求人をチェックする医師" loading="lazy">
+    </div>
+    <div>
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="doctor">医師の方</button>
+        <button class="tab-btn" data-tab="hospital">病院の方</button>
+      </div>
+
+      <div class="tab-panel steps active" data-panel="doctor">
+        <div class="step-card">
+          <div class="step-num">1</div>
+          <div><h3>求人を検索</h3>
+          <p>エリア・診療科・形態で絞り込み、非常勤/当直バイトの求人を自由に閲覧できます。</p></div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">2</div>
+          <div><h3>病院に直接メッセージ</h3>
+          <p>気になる求人があれば、サイト内チャットで病院に直接質問・応募できます。</p></div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">3</div>
+          <div><h3>費用は完全無料</h3>
+          <p>医師側の利用料は登録・応募・成約すべて無料です。</p></div>
+        </div>
+      </div>
+
+      <div class="tab-panel steps" data-panel="hospital">
+        <div class="step-card">
+          <div class="step-num">1</div>
+          <div><h3>求人を無料掲載</h3>
+          <p>非常勤・当直の求人情報を無料で掲載できます。掲載期間の縛りもありません。</p></div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">2</div>
+          <div><h3>医師と直接やり取り</h3>
+          <p>応募・質問はチャットで直接届きます。仲介者を介さないのでスピーディです。</p></div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">3</div>
+          <div><h3>成約時のみ定額課金</h3>
+          <p>採用が決まったら成約報告ボタンを押すだけ。手数料は求人形態別の定額（5,000円〜2万円）です。</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="problem-section" id="problem">
+  <div class="problem-inner">
+    <div class="mission-grid">
+      <div>
+        <div class="section-head">
+          <div class="section-tag red">なぜ、私たちは本気なのか</div>
+          <h2>そしてもう一つ。<br>これは医療費の使われ方の問題でもある。</h2>
+          <p>安さや使いやすさだけでなく、DocLinkには「医療の現場にお金を取り戻す」というもう一つの目的があります。</p>
+        </div>
+
+        <div class="problem-stats">
+          <div class="problem-stat">
+            <div class="num">580<span class="unit">億円+</span></div>
+            <div class="label">看護職の紹介手数料（2023年度）</div>
+          </div>
+          <div class="problem-stat">
+            <div class="num">2.4<span class="unit">倍</span></div>
+            <div class="label">人材紹介料に消える医療費の10年間の伸び</div>
+          </div>
+        </div>
+      </div>
+      <div class="mission-photo">
+        <img src="images/mission.jpg" alt="ハート型に曲げた聴診器を持つ医療従事者" loading="lazy">
+      </div>
+    </div>
+
+    <div class="problem-quote">
+      <span class="qmark">"</span>高額な紹介手数料は経営悪化に拍車をかけており、本来なら医療の質向上や職員の処遇改善に充てられる公的財源が、人材紹介業界へ流出している。日本医師会・四病院団体協議会は、国に手数料の上限規制と返戻金制度の義務化を要望しています。
+    </div>
+
+    <div class="problem-grid">
+      <div class="problem-card">
+        <div class="problem-icon">📉</div>
+        <h3>経営を圧迫し、処遇改善を遠ざける</h3>
+        <p>高額な紹介手数料は病院経営を圧迫し、本来なら医療の質向上や職員の処遇改善に充てられるはずの財源を流出させています。</p>
+      </div>
+      <div class="problem-card">
+        <div class="problem-icon">🏥</div>
+        <h3>中小病院・地方病院ほど重い負担</h3>
+        <p>手数料を負担しきれない中小規模の医療機関ほど人材確保が困難になり、地域医療の偏在・崩壊に拍車をかけています。</p>
+      </div>
+      <div class="problem-card">
+        <div class="problem-icon">🔁</div>
+        <h3>早期離職しても手数料は戻らない</h3>
+        <p>返戻金（返金）制度が不十分な事業者も多く、早期離職が起きても病院側だけがコストを負い続ける構造が残っています。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="legal-note">
+  <strong>ご利用にあたって：</strong>DocLinkは求人・求職者情報の掲載の場を提供する「募集情報等提供サービス」です。病院と医師のマッチング（採否・条件交渉等）は当事者間で直接行っていただき、運営が個別の仲介・あっせんを行うことはありません。
+</div>
+
+<section class="cta-band">
+  <h2>まずは求人を見てみませんか</h2>
+  <p>会員登録不要、今すぐ無料で使えます。</p>
+  <div class="hero-ctas">
+    <a class="btn btn-doctor" href="/signup?role=doctor">🩺 医師の方はこちら</a>
+    <a class="btn btn-hospital" href="/signup?role=hospital">🏥 病院の方はこちら</a>
+  </div>
+</section>
+
+<footer>
+  <div class="badge">Prototype</div>
+  <div>DocLink（プロトタイプ） — 動作確認用のデモサイトです</div>
+</footer>
+
+<script>
+document.querySelectorAll(".tab-btn").forEach(function (btn) {
+  btn.addEventListener("click", function () {
+    document.querySelectorAll(".tab-btn").forEach(function (b) { b.classList.remove("active"); });
+    document.querySelectorAll(".tab-panel").forEach(function (p) { p.classList.remove("active"); });
+    btn.classList.add("active");
+    document.querySelector('.tab-panel[data-panel="' + btn.dataset.tab + '"]').classList.add("active");
+  });
+});
+</script>
+</body>
+</html>
