@@ -10,7 +10,7 @@ export async function GET() {
 
   const users = db
     .prepare(
-      `SELECT id, email, role, display_name, license_number, specialty, created_at, verification_status
+      `SELECT id, email, role, display_name, license_number, specialty, phone, created_at, verification_status
        FROM users WHERE verification_status = 'pending' ORDER BY created_at ASC`
     )
     .all();
@@ -23,6 +23,7 @@ export async function GET() {
     displayName: u.display_name,
     licenseNumber: u.license_number,
     specialty: u.specialty,
+    phone: u.phone,
     createdAt: u.created_at,
     documents: u.role === "doctor" ? docsStmt.all(u.id) : [],
   }));

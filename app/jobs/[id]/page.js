@@ -276,6 +276,12 @@ export default function JobDetailPage() {
 
             <table className="detail-table">
               <tbody>
+                {job.access && (
+                  <tr>
+                    <th>アクセス</th>
+                    <td>{job.access}</td>
+                  </tr>
+                )}
                 <tr>
                   <th>診療科</th>
                   <td>{job.dept}</td>

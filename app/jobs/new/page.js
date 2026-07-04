@@ -15,6 +15,7 @@ export default function NewJobPage() {
     title: "",
     type: "非常勤",
     area: "東京都",
+    access: "",
     dept: DEPT_CATEGORIES[0].depts[0],
     dateText: "",
     payText: "",
@@ -109,6 +110,14 @@ export default function NewJobPage() {
                 <option value="千葉県">千葉県</option>
                 <option value="茨城県">茨城県</option>
               </select>
+            </label>
+            <label className="field">
+              アクセス（最寄駅など・任意）
+              <input
+                value={form.access}
+                onChange={(e) => update("access", e.target.value)}
+                placeholder="例）JR〇〇駅から徒歩5分"
+              />
             </label>
             <label className="field">
               診療科

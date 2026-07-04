@@ -142,7 +142,17 @@ function PendingTab() {
           {" "}
           厚生労働省 医師等資格確認検索
         </a>
-        で氏名・医籍情報を照合してから承認してください。
+        で氏名・医籍情報を照合してから承認してください。病院については
+        <a
+          href="https://www.iryou.teikyouseido.mhlw.go.jp/znk-web/juminkanja/S2340/initialize"
+          target="_blank"
+          rel="noreferrer"
+          style={{ color: "#1a56db", fontWeight: 700 }}
+        >
+          {" "}
+          医療情報ネット
+        </a>
+        で病院の実在を確認し、可能であれば電話番号にかけて登録意思を確認してから承認してください。
       </p>
 
       {users === null ? (
@@ -160,14 +170,15 @@ function PendingTab() {
                     <span style={{ fontWeight: 700, fontSize: 15 }}>{u.displayName}</span>
                   </div>
                   <div style={{ fontSize: 13, color: "#6b7280" }}>{u.email}</div>
+                  {u.phone && <div style={{ fontSize: 13, color: "#6b7280" }}>電話番号: {u.phone}</div>}
                   <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 2 }}>登録日時: {formatDateTime(u.createdAt)}</div>
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
                   <button className="btn-success" disabled={busyId === u.id} onClick={() => handleApprove(u.id)}>
-                    承認する
+                    {busyId === u.id ? "処理中..." : "承認する"}
                   </button>
                   <button className="btn-outline" disabled={busyId === u.id} onClick={() => handleReject(u.id)}>
-                    却下する
+                    {busyId === u.id ? "処理中..." : "却下する"}
                   </button>
                 </div>
               </div>
@@ -258,6 +269,7 @@ function UsersTab() {
                     </span>
                   </div>
                   <div style={{ fontSize: 13, color: "#6b7280" }}>{u.email}</div>
+                  {u.phone && <div style={{ fontSize: 13, color: "#6b7280" }}>電話番号: {u.phone}</div>}
                   {u.specialty && <div style={{ fontSize: 12, color: "#6b7280" }}>専門医資格: {u.specialty}</div>}
                   <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 2 }}>登録日時: {formatDateTime(u.createdAt)}</div>
                 </div>

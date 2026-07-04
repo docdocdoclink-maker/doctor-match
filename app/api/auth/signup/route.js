@@ -25,6 +25,7 @@ export async function POST(request) {
   const displayName = (form.get("displayName") || "").toString().trim();
   const licenseNumber = (form.get("licenseNumber") || "").toString().trim();
   const specialty = (form.get("specialty") || "").toString().trim();
+  const phone = (form.get("phone") || "").toString().trim();
   const agreeToTerms = form.get("agreeToTerms") === "true";
   const resumeFile = form.get("resumeFile");
   const licenseFile = form.get("licenseFile");
@@ -51,6 +52,9 @@ export async function POST(request) {
       );
     }
   }
+  if (role === "hospital" && !phone) {
+    return NextResponse.json({ error: "病院登録には電話番号が必要です" }, { status: 400 });
+  }
 
   const existing = db.prepare("SELECT id FROM users WHERE email = ?").get(email);
   if (existing) {
@@ -71,8 +75,8 @@ export async function POST(request) {
   const hash = bcrypt.hashSync(password, 10);
   const info = db
     .prepare(
-      `INSERT INTO users (email, password_hash, role, display_name, license_number, specialty, agreed_to_terms_at)
-       VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`
+      `INSERT INTO users (email, password_hash, role, display_name, license_number, specialty, phone, agreed_to_terms_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))`
     )
     .run(
       email,
@@ -80,7 +84,8 @@ export async function POST(request) {
       role,
       displayName,
       role === "doctor" ? licenseNumber || null : null,
-      role === "doctor" ? specialty || null : null
+      role === "doctor" ? specialty || null : null,
+      phone || null
     );
 
   const userId = info.lastInsertRowid;
@@ -102,7 +107,7 @@ export async function POST(request) {
   sendMail({
     to: ADMIN_EMAIL,
     subject: `【DocLink管理】新規登録の確認をお願いします（${role === "doctor" ? "医師" : "病院"}）`,
-    text: `新規登録がありました。内容を確認し、管理画面から承認・却下をお願いします。\n\n名前: ${displayName}\nメール: ${email}\n役割: ${role === "doctor" ? "医師" : "病院"}\n\n管理画面: ${APP_URL}/admin`,
+    text: `新規登録がありました。内容を確認し、管理画面から承認・却下をお願いします。\n\n名前: ${displayName}\nメール: ${email}${phone ? `\n電話番号: ${phone}` : ""}\n役割: ${role === "doctor" ? "医師" : "病院"}\n\n管理画面: ${APP_URL}/admin`,
   }).catch(() => {});
 
   return NextResponse.json({ ok: true, role });

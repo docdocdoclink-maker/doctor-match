@@ -12,6 +12,7 @@ function SignupForm() {
   const [password, setPassword] = useState("");
   const [licenseNumber, setLicenseNumber] = useState("");
   const [specialty, setSpecialty] = useState("");
+  const [phone, setPhone] = useState("");
   const [resumeFile, setResumeFile] = useState(null);
   const [licenseFile, setLicenseFile] = useState(null);
   const [agreeToTerms, setAgreeToTerms] = useState(false);
@@ -43,6 +44,9 @@ function SignupForm() {
         form.append("specialty", specialty);
         if (resumeFile) form.append("resumeFile", resumeFile);
         if (licenseFile) form.append("licenseFile", licenseFile);
+      }
+      if (role === "hospital") {
+        form.append("phone", phone);
       }
       const res = await fetch("/api/auth/signup", { method: "POST", body: form });
       const data = await res.json();
@@ -105,6 +109,19 @@ function SignupForm() {
               required
             />
           </label>
+
+          {role === "hospital" && (
+            <label className="field">
+              電話番号
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="例）03-1234-5678"
+                required
+              />
+            </label>
+          )}
 
           {role === "doctor" && (
             <>

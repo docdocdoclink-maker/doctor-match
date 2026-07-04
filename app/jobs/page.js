@@ -72,10 +72,21 @@ export default function JobsPage() {
         <WelcomeModal session={session} onDismiss={() => setShowWelcome(false)} />
       )}
       <main className="wrap">
-        <h1 style={{ fontSize: 22, margin: "0 0 4px" }}>非常勤・当直バイト求人（関東）</h1>
-        <p style={{ color: "#6b7280", fontSize: 13, margin: "0 0 20px" }}>
-          全ての求人を検索・閲覧できます。応募・連絡は病院と直接やり取りできます。
-        </p>
+        {session?.role === "hospital" ? (
+          <>
+            <h1 style={{ fontSize: 22, margin: "0 0 4px" }}>掲載中の求人一覧</h1>
+            <p style={{ color: "#6b7280", fontSize: 13, margin: "0 0 20px" }}>
+              貴院が掲載した求人の一覧です。医師からの連絡は各求人ページのチャットで確認できます。
+            </p>
+          </>
+        ) : (
+          <>
+            <h1 style={{ fontSize: 22, margin: "0 0 4px" }}>非常勤・当直バイト求人（関東）</h1>
+            <p style={{ color: "#6b7280", fontSize: 13, margin: "0 0 20px" }}>
+              全ての求人を検索・閲覧できます。応募・連絡は病院と直接やり取りできます。
+            </p>
+          </>
+        )}
 
         <div className="filters">
           <select value={filters.area} onChange={(e) => setFilters({ ...filters, area: e.target.value })}>
