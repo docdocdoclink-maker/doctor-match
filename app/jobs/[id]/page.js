@@ -498,7 +498,9 @@ export default function JobDetailPage() {
                 が必要です。
               </p>
             )}
-            <p className="fee-note">運営は内容に関与しません。病院・医師間で直接やり取りしてください。</p>
+            <p className="fee-note">
+              採否・条件交渉は病院・医師間で直接行ってください（運営が仲介・あっせんすることはありません）。不正利用防止のため運営が内容を確認する場合があります。
+            </p>
           </div>
         </div>
       </main>

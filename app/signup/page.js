@@ -64,6 +64,9 @@ function SignupForm() {
       <Link href="/" className="brand" style={{ display: "block", textAlign: "center", marginBottom: 24 }}>
         DocLink <span className="badge">Prototype</span>
       </Link>
+
+      <RoleIntro role={role} />
+
       <div className="card">
         <h1 style={{ fontSize: 18, margin: "0 0 16px" }}>会員登録</h1>
 
@@ -175,6 +178,37 @@ function SignupForm() {
           </Link>
         </p>
       </div>
+    </div>
+  );
+}
+
+function RoleIntro({ role }) {
+  const isDoctor = role === "doctor";
+  return (
+    <div
+      style={{
+        borderRadius: 16,
+        padding: "22px 24px",
+        marginBottom: 20,
+        background: isDoctor
+          ? "linear-gradient(160deg, #eef5ff, #fafbff)"
+          : "linear-gradient(160deg, #eafaf6, #fafffe)",
+        border: "1px solid #eef0f3",
+      }}
+    >
+      <h2 style={{ fontSize: 18, margin: "0 0 8px", color: "#0d1b33", fontWeight: 800 }}>
+        {isDoctor ? "業界最高値の給与を目指す医師の方へ" : "病院にも医師にも、とことんやさしい採用を"}
+      </h2>
+      <p style={{ fontSize: 13.5, color: "#4b5768", lineHeight: 1.8, margin: "0 0 12px" }}>
+        {isDoctor
+          ? "DocLinkは仲介手数料を業界最安水準に抑え、その分を病院側にできるだけ給与・待遇へ還元してもらうようお願いしています。登録・求人閲覧・応募・成約まで、医師側の費用は完全無料です。"
+          : "DocLinkの手数料は成約時のみ、求人形態に応じた定額（5,000円〜2万円）です。求人掲載は無料。浮いたコストを医師の待遇に回していただくことで、より良い人材確保につながります。"}
+      </p>
+      <p style={{ fontSize: 13, color: "#5c6b80", lineHeight: 1.8, margin: 0 }}>
+        {isDoctor
+          ? "その代わり、条件のすり合わせや日程調整は病院と直接チャットでやり取りしていただきます。運営が間に入って交渉することはありません。"
+          : "その代わり、応募者とのやり取り（条件交渉・日程調整など）は病院側で直接チャットにて行っていただきます。運営が間に入って仲介・あっせんすることはありません。"}
+      </p>
     </div>
   );
 }
