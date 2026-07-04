@@ -69,6 +69,15 @@ export default function TermsPage() {
           <p>本規約の解釈にあたっては日本法を準拠法とし、本サービスに関して紛争が生じた場合には、運営者の所在地を管轄する裁判所を専属的合意管轄とします。</p>
         </Section>
       </div>
+
+      <p className="fee-note" style={{ marginTop: 24 }}>
+        個人情報の取り扱いについては
+        <Link href="/privacy" style={{ color: "#1a56db", fontWeight: 700 }}>
+          {" "}
+          プライバシーポリシー
+        </Link>
+        をご覧ください。
+      </p>
     </div>
   );
 }

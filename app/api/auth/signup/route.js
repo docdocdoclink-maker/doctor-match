@@ -4,11 +4,20 @@ import db from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { saveUpload } from "@/lib/uploads";
 import { sendMail } from "@/lib/mailer";
+import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 
 const APP_URL = process.env.APP_URL || "http://localhost:3000";
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "docdocdoclink@gmail.com";
 
 export async function POST(request) {
+  const rate = checkRateLimit(`signup:${getClientIp(request)}`, { max: 5, windowMs: 60 * 60 * 1000 });
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { error: "登録試行回数が多すぎます。しばらくしてから再度お試しください。" },
+      { status: 429 }
+    );
+  }
+
   const form = await request.formData();
   const email = (form.get("email") || "").toString().trim();
   const password = (form.get("password") || "").toString();

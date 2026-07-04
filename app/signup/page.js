@@ -162,6 +162,10 @@ function SignupForm() {
               <Link href="/terms" target="_blank" style={{ color: "#1a56db", fontWeight: 700 }}>
                 利用規約
               </Link>
+              ・
+              <Link href="/privacy" target="_blank" style={{ color: "#1a56db", fontWeight: 700 }}>
+                プライバシーポリシー
+              </Link>
               に同意します
             </span>
           </label>
