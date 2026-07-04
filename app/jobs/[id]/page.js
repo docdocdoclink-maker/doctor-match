@@ -1,0 +1,507 @@
+"use client";
+import { useEffect, useRef, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
+import Topbar from "../../components/Topbar";
+import { getFeeForJobType, formatYen, getPaymentLinkForJobType } from "../../../lib/pricing";
+
+function formatDateTime(sqliteText) {
+  if (!sqliteText) return "";
+  return new Date(sqliteText.replace(" ", "T") + "Z").toLocaleString("ja-JP", {
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function formatShortTime(sqliteText) {
+  return new Date(sqliteText.replace(" ", "T") + "Z").toLocaleString("ja-JP", {
+    month: "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+// キーワードが相手の直近メッセージに含まれていれば、その定型文を上位に表示する。
+// 本物のAI生成ではなく、単純なキーワード一致による並べ替え。
+const DOCTOR_QUICK_REPLIES = [
+  { text: "当直室の設備について教えてください", keywords: ["設備", "部屋", "環境", "当直室"] },
+  { text: "駐車場はありますか", keywords: ["駐車", "車", "パーキング"] },
+  { text: "この日程で応募したいです", keywords: ["日程", "応募", "決定", "大丈夫", "実績"] },
+  { text: "報酬・条件について相談したいです", keywords: ["報酬", "給与", "条件", "円", "手当"] },
+  { text: "面談・面接は可能でしょうか", keywords: ["面談", "面接", "オンライン"] },
+];
+const HOSPITAL_QUICK_REPLIES = [
+  { text: "ご応募ありがとうございます。詳細をご説明します。", keywords: ["応募", "興味", "お願い", "検討"] },
+  { text: "オンラインでの面談も可能です。日程調整しましょう", keywords: ["面談", "面接", "会って", "オンライン"] },
+  { text: "当直室に個室・布団をご用意しています", keywords: ["当直室", "設備", "布団", "仮眠", "部屋"] },
+  { text: "駐車場は病院敷地内に完備しています", keywords: ["駐車", "車", "パーキング"] },
+  { text: "報酬は経験に応じて相談可能です", keywords: ["報酬", "給与", "条件", "円", "手当"] },
+  { text: "ご不明な点があればいつでもご連絡ください", keywords: [] },
+];
+
+function rankQuickReplies(templates, lastIncomingText) {
+  const text = lastIncomingText || "";
+  return [...templates]
+    .map((t, i) => ({ ...t, i, score: t.keywords.filter((k) => text.includes(k)).length }))
+    .sort((a, b) => b.score - a.score || a.i - b.i);
+}
+
+export default function JobDetailPage() {
+  const { id } = useParams();
+  const [session, setSession] = useState(null);
+  const [job, setJob] = useState(null);
+  const [notFound, setNotFound] = useState(false);
+  const [conversations, setConversations] = useState([]);
+  const [activeDoctorId, setActiveDoctorId] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [anonymous, setAnonymous] = useState(false);
+  const [text, setText] = useState("");
+  const [file, setFile] = useState(null);
+  const [sending, setSending] = useState(false);
+  const [hiring, setHiring] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const [showInvite, setShowInvite] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteMessage, setInviteMessage] = useState("");
+  const [inviteError, setInviteError] = useState("");
+  const [inviteSending, setInviteSending] = useState(false);
+  const [inviteSent, setInviteSent] = useState(false);
+  const threadRef = useRef(null);
+  const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then(setSession);
+    loadJob();
+  }, [id]);
+
+  useEffect(() => {
+    if (!session) return;
+    if (session.role === "hospital") {
+      loadConversations();
+    } else if (session.role === "doctor") {
+      setActiveDoctorId(session.userId);
+    }
+  }, [session, id]);
+
+  useEffect(() => {
+    if (activeDoctorId) loadMessages(activeDoctorId);
+  }, [activeDoctorId]);
+
+  useEffect(() => {
+    if (threadRef.current) {
+      threadRef.current.scrollTop = threadRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  async function loadJob() {
+    const res = await fetch("/api/jobs");
+    const data = await res.json();
+    const found = (data.jobs || []).find((j) => String(j.id) === String(id));
+    if (!found) {
+      setNotFound(true);
+      return;
+    }
+    setJob(found);
+  }
+
+  async function loadConversations() {
+    const res = await fetch(`/api/jobs/${id}/conversations`);
+    const data = await res.json();
+    setConversations(data.conversations || []);
+    if (!activeDoctorId && data.conversations?.length > 0) {
+      setActiveDoctorId(data.conversations[0].doctorUserId);
+    }
+  }
+
+  async function loadMessages(doctorId) {
+    const url = new URL(`/api/jobs/${id}/messages`, window.location.origin);
+    url.searchParams.set("doctorId", doctorId);
+    const res = await fetch(url);
+    const data = await res.json();
+    setMessages(data.messages || []);
+    setAnonymous(!!data.anonymous);
+  }
+
+  async function handleSend(e) {
+    e.preventDefault();
+    if (!text.trim() && !file) return;
+    setSending(true);
+    setUploadError("");
+
+    const form = new FormData();
+    form.append("text", text.trim());
+    if (session.role === "doctor") form.append("anonymous", String(anonymous));
+    if (session.role === "hospital") form.append("doctorId", String(activeDoctorId));
+    if (file) form.append("file", file);
+
+    const res = await fetch(`/api/jobs/${id}/messages`, { method: "POST", body: form });
+    const data = await res.json();
+    if (!res.ok) {
+      setUploadError(data.error || "送信に失敗しました");
+      setSending(false);
+      return;
+    }
+    setText("");
+    setFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    await loadMessages(activeDoctorId);
+    if (session.role === "hospital") await loadConversations();
+    setSending(false);
+  }
+
+  async function handleHire() {
+    setHiring(true);
+    const res = await fetch(`/api/jobs/${id}/hire`, { method: "POST" });
+    if (res.ok) {
+      await loadJob();
+      if (activeDoctorId) await loadMessages(activeDoctorId);
+    }
+    setHiring(false);
+  }
+
+  async function handleInvite(e) {
+    e.preventDefault();
+    setInviteError("");
+    setInviteSending(true);
+    const res = await fetch(`/api/jobs/${id}/invite`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: inviteEmail, message: inviteMessage }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setInviteError(data.error || "送信に失敗しました");
+      setInviteSending(false);
+      return;
+    }
+    setInviteSent(true);
+    setInviteEmail("");
+    setInviteMessage("");
+    setInviteSending(false);
+    await loadConversations();
+    setActiveDoctorId(data.doctorId);
+  }
+
+  if (notFound) {
+    return (
+      <>
+        <Topbar session={session} />
+        <main className="wrap">
+          <p>求人が見つかりませんでした。</p>
+          <Link href="/jobs" className="back-link">
+            ← 一覧に戻る
+          </Link>
+        </main>
+      </>
+    );
+  }
+
+  if (!job) {
+    return (
+      <>
+        <Topbar session={session} />
+        <main className="wrap">
+          <div className="loading-state">読み込み中...</div>
+        </main>
+      </>
+    );
+  }
+
+  const isDoctor = session?.loggedIn && session.role === "doctor";
+  const isOwnerHospital = session?.loggedIn && session.role === "hospital" && session.userId === job.hospital_user_id;
+  const templates = session?.role === "doctor" ? DOCTOR_QUICK_REPLIES : HOSPITAL_QUICK_REPLIES;
+  const lastIncoming = [...messages].reverse().find((m) => m.sender_role !== "system" && m.sender_role !== session?.role);
+  const quickReplies = rankQuickReplies(templates, lastIncoming?.text);
+
+  return (
+    <>
+      <Topbar session={session} />
+      <main className="wrap">
+        <Link href="/jobs" className="back-link">
+          ← 一覧に戻る
+        </Link>
+
+        <div className="detail-grid">
+          <div className="card">
+            <div className="job-card-top">
+              <span className="tag tag-type">{job.type}</span>
+              <span className="tag tag-area">{job.area}</span>
+            </div>
+            <h1 style={{ fontSize: 20, margin: "6px 0" }}>{job.title}</h1>
+            <div style={{ color: "#4b5563", marginBottom: 16, fontSize: 14 }}>{job.hospital_name}</div>
+
+            <table className="detail-table">
+              <tbody>
+                <tr>
+                  <th>診療科</th>
+                  <td>{job.dept}</td>
+                </tr>
+                <tr>
+                  <th>日時</th>
+                  <td>{job.date_text}</td>
+                </tr>
+                <tr>
+                  <th>報酬</th>
+                  <td>{job.pay_text}</td>
+                </tr>
+                <tr>
+                  <th>業務内容</th>
+                  <td>{job.desc}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            {isDoctor && !job.hired && (
+              <div style={{ borderTop: "1px solid #eee", paddingTop: 16 }}>
+                <p className="fee-note">※ 成約時のみ病院側に手数料が発生します（医師側は完全無料）</p>
+              </div>
+            )}
+
+            {isOwnerHospital && (
+              <div style={{ borderTop: "1px solid #eee", paddingTop: 16, marginTop: 16 }}>
+                {job.hired ? (
+                  <>
+                    <span className="hired-badge">✓ 成約済み（{formatDateTime(job.hired_at)}）</span>
+                    {getPaymentLinkForJobType(job.type) ? (
+                      <p className="fee-note">
+                        手数料 {formatYen(getFeeForJobType(job.type))} のお支払いは
+                        <a
+                          href={getPaymentLinkForJobType(job.type)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: "#1a56db", fontWeight: 700 }}
+                        >
+                          {" "}
+                          こちらから
+                        </a>
+                        お願いします。
+                      </p>
+                    ) : (
+                      <p className="fee-note">運営より手数料 {formatYen(getFeeForJobType(job.type))} の請求書をお送りします。</p>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <button className="btn-success" onClick={handleHire} disabled={hiring}>
+                      {hiring ? "処理中..." : "採用が決まりました（成約報告）"}
+                    </button>
+                    <p className="fee-note">成約報告をすると、運営から手数料 {formatYen(getFeeForJobType(job.type))} の請求書をお送りします。</p>
+                  </>
+                )}
+              </div>
+            )}
+
+            {!!job.hired && !isOwnerHospital && (
+              <div style={{ borderTop: "1px solid #eee", paddingTop: 16, marginTop: 16 }}>
+                <span className="hired-badge">✓ 成約済み（{formatDateTime(job.hired_at)}）</span>
+              </div>
+            )}
+          </div>
+
+          <div className="detail-chat">
+            {isOwnerHospital && (
+              <div style={{ marginBottom: 12 }}>
+                <label className="field" style={{ marginBottom: 0 }}>
+                  会話中の医師（{conversations.length}件）
+                  <select
+                    value={activeDoctorId || ""}
+                    onChange={(e) => setActiveDoctorId(Number(e.target.value))}
+                  >
+                    {conversations.length === 0 && <option>まだ問い合わせがありません</option>}
+                    {conversations.map((c) => (
+                      <option key={c.doctorUserId} value={c.doctorUserId}>
+                        {c.displayName}
+                        {c.specialty ? `（${c.specialty}）` : ""}
+                        {c.lastAt ? ` ・ ${formatShortTime(c.lastAt)}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                {!showInvite ? (
+                  <button
+                    type="button"
+                    className="btn-outline"
+                    style={{ marginTop: 8, fontSize: 12 }}
+                    onClick={() => {
+                      setShowInvite(true);
+                      setInviteSent(false);
+                    }}
+                  >
+                    ✉️ 特定の医師にメッセージを送る
+                  </button>
+                ) : (
+                  <form onSubmit={handleInvite} style={{ marginTop: 10, background: "#f9fafb", padding: 12, borderRadius: 8 }}>
+                    <p style={{ fontSize: 11, color: "#6b7280", margin: "0 0 8px" }}>
+                      DocLinkに登録済みの医師のメールアドレス宛に、この求人についてメッセージを送れます（未登録のメールアドレスには送信できません）。
+                    </p>
+                    {inviteError && <div className="error-box" style={{ fontSize: 12 }}>{inviteError}</div>}
+                    {inviteSent && (
+                      <div style={{ fontSize: 12, color: "#0a7d3c", marginBottom: 8 }}>✓ 送信しました</div>
+                    )}
+                    <label className="field" style={{ marginBottom: 8 }}>
+                      医師のメールアドレス
+                      <input
+                        type="email"
+                        value={inviteEmail}
+                        onChange={(e) => setInviteEmail(e.target.value)}
+                        placeholder="doctor@example.com"
+                        required
+                      />
+                    </label>
+                    <label className="field" style={{ marginBottom: 8 }}>
+                      メッセージ
+                      <textarea
+                        value={inviteMessage}
+                        onChange={(e) => setInviteMessage(e.target.value)}
+                        placeholder="この求人にご興味ありませんか？"
+                        required
+                      />
+                    </label>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button type="submit" className="btn-primary" disabled={inviteSending}>
+                        {inviteSending ? "送信中..." : "送信する"}
+                      </button>
+                      <button type="button" className="btn-outline" onClick={() => setShowInvite(false)}>
+                        閉じる
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </div>
+            )}
+
+            <h2 style={{ fontSize: 15, margin: "0 0 12px" }}>メッセージ</h2>
+            <div className="chat-thread" ref={threadRef}>
+              {(!activeDoctorId || messages.length === 0) ? (
+                <div className="chat-empty">
+                  まだメッセージはありません。
+                  <br />
+                  気になる点を病院に直接聞いてみましょう。
+                </div>
+              ) : (
+                messages.map((m) => (
+                  <div
+                    key={m.id}
+                    className={
+                      m.sender_role === "system"
+                        ? "msg-system"
+                        : `msg ${m.sender_role === "doctor" ? "msg-doctor" : "msg-hospital"}`
+                    }
+                  >
+                    {m.sender_role === "system" ? (
+                      <>✓ {m.text}</>
+                    ) : (
+                      <>
+                        {m.text}
+                        {m.attachment_path && (
+                          <div style={{ marginTop: 6 }}>
+                            <a
+                              href={`/api/uploads/${m.attachment_path}`}
+                              style={{ color: "inherit", textDecoration: "underline", fontSize: 12 }}
+                            >
+                              📎 {m.attachment_name}
+                            </a>
+                          </div>
+                        )}
+                        <div className="msg-time">
+                          {m.sender_role === "doctor" ? "医師" : "病院"} ・ {formatShortTime(m.created_at)}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+
+            {session?.loggedIn && session.verificationStatus === "pending" ? (
+              <p className="fee-note">
+                ⏳ ご登録内容を確認中です。確認が完了するとメッセージを送信できるようになります（メールでお知らせします）。
+              </p>
+            ) : session?.loggedIn && (isDoctor || activeDoctorId) ? (
+              <>
+                {lastIncoming && quickReplies[0]?.score > 0 && (
+                  <div style={{ fontSize: 11, color: "#1a56db", fontWeight: 700, marginBottom: 4 }}>
+                    💡 相手のメッセージから返信候補をおすすめ表示中
+                  </div>
+                )}
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+                  {quickReplies.map((q) => (
+                    <button
+                      key={q.text}
+                      type="button"
+                      onClick={() => setText(q.text)}
+                      style={{
+                        fontSize: 11,
+                        padding: "5px 10px",
+                        borderRadius: 999,
+                        border: q.score > 0 ? "1px solid #1a56db" : "1px solid #d1d5db",
+                        background: q.score > 0 ? "#e9f0ff" : "#f9fafb",
+                        color: q.score > 0 ? "#1a56db" : "#4b5563",
+                        fontWeight: q.score > 0 ? 700 : 400,
+                        cursor: "pointer",
+                      }}
+                    >
+                      {q.score > 0 ? "💡 " : ""}
+                      {q.text}
+                    </button>
+                  ))}
+                </div>
+
+                {isDoctor && (
+                  <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#4b5563", marginBottom: 8 }}>
+                    <input type="checkbox" checked={anonymous} onChange={(e) => setAnonymous(e.target.checked)} />
+                    匿名で連絡する（病院には「匿名の医師」として表示されます）
+                  </label>
+                )}
+
+                {uploadError && <div className="error-box">{uploadError}</div>}
+
+                <form className="chat-form" onSubmit={handleSend} style={{ flexWrap: "wrap" }}>
+                  <input
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    placeholder="メッセージを入力..."
+                    autoComplete="off"
+                    style={{ flex: 1, minWidth: 140 }}
+                  />
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf,.png,.jpg,.jpeg"
+                    onChange={(e) => setFile(e.target.files?.[0] || null)}
+                    style={{ fontSize: 11, maxWidth: 130 }}
+                  />
+                  <button type="submit" className="btn-primary" disabled={sending}>
+                    送信
+                  </button>
+                </form>
+                {file && <p className="fee-note">添付: {file.name}</p>}
+                <p className="fee-note">履歴書・医師免許等の書類はPDF/画像で添付できます（10MBまで）。</p>
+              </>
+            ) : isOwnerHospital ? (
+              <p className="fee-note">
+                まだ医師からの問い合わせがありません。上の「特定の医師にメッセージを送る」から直接声をかけることもできます。
+              </p>
+            ) : (
+              <p className="fee-note">
+                メッセージを送るには{" "}
+                <Link href="/login" style={{ color: "#1a56db", fontWeight: 700 }}>
+                  ログイン
+                </Link>
+                が必要です。
+              </p>
+            )}
+            <p className="fee-note">運営は内容に関与しません。病院・医師間で直接やり取りしてください。</p>
+          </div>
+        </div>
+      </main>
+    </>
+  );
+}
