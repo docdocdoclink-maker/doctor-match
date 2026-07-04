@@ -19,6 +19,9 @@ export default function NewJobPage() {
     dateText: "",
     payText: "",
     desc: "",
+    emergencyVolume: "",
+    nightDutyNote: "",
+    backupNote: "",
   });
 
   useEffect(() => {
@@ -137,6 +140,37 @@ export default function NewJobPage() {
               業務内容
               <textarea value={form.desc} onChange={(e) => update("desc", e.target.value)} placeholder="業務内容を記載してください" required />
             </label>
+
+            <div style={{ borderTop: "1px solid #eee", margin: "18px 0 14px", paddingTop: 14 }}>
+              <p style={{ fontSize: 12, color: "#6b7280", margin: "0 0 12px" }}>
+                以下は任意項目です。当直の実態が伝わると、医師が応募を判断しやすくなります。
+              </p>
+            </div>
+            <label className="field">
+              救急車搬送件数の目安（任意）
+              <input
+                value={form.emergencyVolume}
+                onChange={(e) => update("emergencyVolume", e.target.value)}
+                placeholder="例）年間2,000件"
+              />
+            </label>
+            <label className="field">
+              当直体制の概要（任意）
+              <input
+                value={form.nightDutyNote}
+                onChange={(e) => update("nightDutyNote", e.target.value)}
+                placeholder="例）整形外科医1名＋救急医常駐"
+              />
+            </label>
+            <label className="field">
+              バックアップ体制（任意）
+              <input
+                value={form.backupNote}
+                onChange={(e) => update("backupNote", e.target.value)}
+                placeholder="例）オンコールで常勤医に相談可"
+              />
+            </label>
+
             <button type="submit" className="btn-primary" disabled={submitting}>
               {submitting ? "掲載中..." : "掲載する"}
             </button>

@@ -18,17 +18,30 @@ export async function POST(request) {
   }
 
   const body = await request.json();
-  const { title, type, area, dept, dateText, payText, desc } = body;
+  const { title, type, area, dept, dateText, payText, desc, emergencyVolume, nightDutyNote, backupNote } = body;
   if (!title || !type || !area || !dept || !dateText || !payText || !desc) {
     return NextResponse.json({ error: "すべての項目を入力してください" }, { status: 400 });
   }
 
   const info = db
     .prepare(
-      `INSERT INTO jobs (hospital_user_id, hospital_name, title, type, area, dept, date_text, pay_text, desc)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO jobs (hospital_user_id, hospital_name, title, type, area, dept, date_text, pay_text, desc, emergency_volume, night_duty_note, backup_note)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
-    .run(session.userId, session.displayName, title, type, area, dept, dateText, payText, desc);
+    .run(
+      session.userId,
+      session.displayName,
+      title,
+      type,
+      area,
+      dept,
+      dateText,
+      payText,
+      desc,
+      (emergencyVolume || "").trim() || null,
+      (nightDutyNote || "").trim() || null,
+      (backupNote || "").trim() || null
+    );
 
   const job = db.prepare("SELECT * FROM jobs WHERE id = ?").get(info.lastInsertRowid);
   return NextResponse.json({ job });

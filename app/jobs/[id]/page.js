@@ -50,6 +50,44 @@ function rankQuickReplies(templates, lastIncomingText) {
     .sort((a, b) => b.score - a.score || a.i - b.i);
 }
 
+// Optional context about actual on-call conditions, filled in by the
+// hospital at posting time. Only shown when at least one field is present —
+// no "unconfirmed" placeholders for the rest, since most postings will
+// leave some of these blank.
+function WorkRealitySection({ job }) {
+  const items = [
+    { label: "救急車搬送件数の目安", value: job.emergency_volume },
+    { label: "当直体制", value: job.night_duty_note },
+    { label: "バックアップ体制", value: job.backup_note },
+  ].filter((item) => item.value);
+
+  if (items.length === 0) return null;
+
+  return (
+    <div style={{ borderTop: "1px solid #eee", paddingTop: 16, marginTop: 4 }}>
+      <h2 style={{ fontSize: 14, margin: "0 0 10px", color: "#0d1b33" }}>勤務の実態</h2>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {items.map((item) => (
+          <div
+            key={item.label}
+            style={{
+              display: "flex",
+              gap: 10,
+              fontSize: 13,
+              background: "#f9fafb",
+              borderRadius: 8,
+              padding: "8px 12px",
+            }}
+          >
+            <span style={{ color: "#6b7280", flexShrink: 0, minWidth: 140 }}>{item.label}</span>
+            <span style={{ color: "#16202e", fontWeight: 600 }}>{item.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function JobDetailPage() {
   const { id } = useParams();
   const [session, setSession] = useState(null);
@@ -256,6 +294,8 @@ export default function JobDetailPage() {
                 </tr>
               </tbody>
             </table>
+
+            <WorkRealitySection job={job} />
 
             {isDoctor && !job.hired && (
               <div style={{ borderTop: "1px solid #eee", paddingTop: 16 }}>
