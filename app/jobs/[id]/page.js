@@ -345,6 +345,19 @@ export default function JobDetailPage() {
           </div>
 
           <div className="detail-chat">
+            {job.hospital_website && (
+              <div style={{ marginBottom: 12 }}>
+                <a
+                  href={job.hospital_website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: "#1a56db", fontWeight: 700, fontSize: 13 }}
+                >
+                  🔗 {job.hospital_name} 公式サイトを見る
+                </a>
+              </div>
+            )}
+
             {isOwnerHospital && (
               <div style={{ marginBottom: 12 }}>
                 <label className="field" style={{ marginBottom: 0 }}>

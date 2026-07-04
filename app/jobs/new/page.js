@@ -22,6 +22,7 @@ export default function NewJobPage() {
     emergencyVolume: "",
     nightDutyNote: "",
     backupNote: "",
+    hospitalWebsite: "",
   });
 
   useEffect(() => {
@@ -168,6 +169,15 @@ export default function NewJobPage() {
                 value={form.backupNote}
                 onChange={(e) => update("backupNote", e.target.value)}
                 placeholder="例）オンコールで常勤医に相談可"
+              />
+            </label>
+            <label className="field">
+              病院公式サイトURL（任意）
+              <input
+                type="url"
+                value={form.hospitalWebsite}
+                onChange={(e) => update("hospitalWebsite", e.target.value)}
+                placeholder="例）https://example-hospital.jp"
               />
             </label>
 
