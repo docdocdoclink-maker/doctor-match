@@ -147,10 +147,10 @@ function SignupForm() {
                 />
               </label>
               <label className="field">
-                履歴書（PDF/画像・必須）
+                履歴書（PDF/Word/画像・必須）
                 <input
                   type="file"
-                  accept=".pdf,.png,.jpg,.jpeg"
+                  accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
                   onChange={(e) => setResumeFile(e.target.files?.[0] || null)}
                   required
                 />

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import db from "@/lib/db";
 import { getSession } from "@/lib/session";
-import { saveUpload } from "@/lib/uploads";
+import { saveUpload, RESUME_ALLOWED_EXT } from "@/lib/uploads";
 import { sendMail } from "@/lib/mailer";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 
@@ -65,7 +65,7 @@ export async function POST(request) {
   let licenseUpload = null;
   if (role === "doctor") {
     try {
-      resumeUpload = await saveUpload(resumeFile);
+      resumeUpload = await saveUpload(resumeFile, RESUME_ALLOWED_EXT);
       licenseUpload = await saveUpload(licenseFile);
     } catch (e) {
       return NextResponse.json({ error: e.message }, { status: 400 });
