@@ -5,7 +5,15 @@ import { sessionOptions } from "@/lib/session";
 // Pre-launch gate: while SITE_LOCKED is on (default), only an admin session
 // can use the site. Everyone else is bounced to /coming-soon (pages) or gets
 // a 503 (API calls). Flip SITE_LOCKED=false in the env for the real launch.
-const ALWAYS_ALLOWED = ["/admin", "/api/admin", "/coming-soon", "/favicon.ico", "/robots.txt"];
+const ALWAYS_ALLOWED = [
+  "/admin",
+  "/api/admin",
+  "/coming-soon",
+  "/contact",
+  "/api/contact",
+  "/favicon.ico",
+  "/robots.txt",
+];
 
 export async function proxy(request) {
   if (process.env.SITE_LOCKED === "false") {
