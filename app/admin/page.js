@@ -223,17 +223,47 @@ function PendingTab() {
 function UsersTab() {
   const [users, setUsers] = useState(null);
   const [roleFilter, setRoleFilter] = useState("");
+  const [cleaning, setCleaning] = useState(false);
+  const [cleanupMessage, setCleanupMessage] = useState("");
 
   useEffect(() => {
+    loadUsers();
+  }, []);
+
+  function loadUsers() {
     fetch("/api/admin/users")
       .then((r) => r.json())
       .then((data) => setUsers(data.users));
-  }, []);
+  }
 
   const filtered = (users || []).filter((u) => !roleFilter || u.role === roleFilter);
+  const hasDemoHospital = (users || []).some((u) => u.email === "demo-hospital@example.com");
+
+  async function handleCleanupDemo() {
+    if (!window.confirm("デモ病院アカウントと、そこに紐づくデモ求人をすべて削除します。よろしいですか？")) return;
+    setCleaning(true);
+    setCleanupMessage("");
+    const res = await fetch("/api/admin/cleanup-demo", { method: "POST" });
+    const data = await res.json();
+    setCleanupMessage(data.message || "");
+    setCleaning(false);
+    loadUsers();
+  }
 
   return (
     <>
+      {hasDemoHospital && (
+        <div className="card" style={{ marginBottom: 14, padding: 14, background: "#fff8e6" }}>
+          <div style={{ fontSize: 13, marginBottom: 8 }}>
+            デモ病院アカウント（demo-hospital@example.com）とデモ求人がまだ残っています。公開前に削除しておきましょう。
+          </div>
+          <button className="btn-outline" disabled={cleaning} onClick={handleCleanupDemo}>
+            {cleaning ? "削除中..." : "デモデータを削除する"}
+          </button>
+          {cleanupMessage && <div style={{ fontSize: 12, color: "#0a7d3c", marginTop: 8 }}>{cleanupMessage}</div>}
+        </div>
+      )}
+
       <div style={{ marginBottom: 14 }}>
         <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
           <option value="">すべて</option>
