@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Topbar from "../../components/Topbar";
 import { DEPT_CATEGORIES } from "../../../lib/depts";
-import { getFeeForJobType, formatYen } from "../../../lib/pricing";
+import { getFeeForJobType, formatYen, isFreeCampaignActive } from "../../../lib/pricing";
 
 export default function NewJobPage() {
   const router = useRouter();
@@ -98,7 +98,11 @@ export default function NewJobPage() {
                 <option value="常勤">常勤</option>
               </select>
               <span className="fee-note" style={{ margin: "4px 0 0" }}>
-                成約時の手数料: {formatYen(getFeeForJobType(form.type))}
+                {isFreeCampaignActive() ? (
+                  <>成約時の手数料: 0円（今年度中キャンペーン中・通常{formatYen(getFeeForJobType(form.type))}）</>
+                ) : (
+                  <>成約時の手数料: {formatYen(getFeeForJobType(form.type))}</>
+                )}
               </span>
             </label>
             <label className="field">
@@ -194,7 +198,9 @@ export default function NewJobPage() {
               {submitting ? "掲載中..." : "掲載する"}
             </button>
             <p className="fee-note">
-              掲載無料。採用が決まった場合のみ手数料が発生します（スポット・当直5,000円／非常勤10,000円／常勤20,000円）。
+              {isFreeCampaignActive()
+                ? "掲載無料。今年度中（2027年3月31日まで）はキャンペーンとして成約手数料も無料です（通常はスポット・当直5,000円／非常勤10,000円／常勤20,000円）。"
+                : "掲載無料。採用が決まった場合のみ手数料が発生します（スポット・当直5,000円／非常勤10,000円／常勤20,000円）。"}
             </p>
           </form>
         </div>

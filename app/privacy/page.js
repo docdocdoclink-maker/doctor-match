@@ -2,8 +2,6 @@ import Link from "next/link";
 
 export const metadata = { title: "プライバシーポリシー｜DocLink" };
 
-const CONTACT_EMAIL = process.env.ADMIN_EMAIL || "docdocdoclink@gmail.com";
-
 export default function PrivacyPage() {
   return (
     <div className="wrap" style={{ maxWidth: 720 }}>
@@ -82,11 +80,11 @@ export default function PrivacyPage() {
         <Section title="第9条（お問い合わせ窓口）">
           <p>
             本ポリシーおよび個人情報の取り扱いに関するお問い合わせは、
-            <a href={`mailto:${CONTACT_EMAIL}`} style={{ color: "#1a56db", fontWeight: 700 }}>
+            <Link href="/contact" style={{ color: "#1a56db", fontWeight: 700 }}>
               {" "}
-              {CONTACT_EMAIL}
-            </a>
-            {" "}までご連絡ください。
+              お問い合わせフォーム
+            </Link>
+            {" "}よりご連絡ください。
           </p>
         </Section>
 

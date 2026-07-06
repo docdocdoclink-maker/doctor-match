@@ -2,6 +2,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { isFreeCampaignActive } from "../../lib/pricing";
 
 function SignupForm() {
   const router = useRouter();
@@ -223,6 +224,8 @@ function RoleIntro({ role }) {
       <p style={{ fontSize: 13.5, color: "#4b5768", lineHeight: 1.8, margin: "0 0 12px" }}>
         {isDoctor
           ? "DocLinkは仲介手数料を業界最安水準に抑え、その分を病院側にできるだけ給与・待遇へ還元してもらうようお願いしています。登録・求人閲覧・応募・成約まで、医師側の費用は完全無料です。"
+          : isFreeCampaignActive()
+          ? "DocLinkの手数料は成約時のみ、求人形態に応じた定額（5,000円〜2万円）ですが、今年度中（2027年3月31日まで）はキャンペーンとして無料です。求人掲載も無料。浮いたコストを医師の待遇に回していただくことで、より良い人材確保につながります。"
           : "DocLinkの手数料は成約時のみ、求人形態に応じた定額（5,000円〜2万円）です。求人掲載は無料。浮いたコストを医師の待遇に回していただくことで、より良い人材確保につながります。"}
       </p>
       <p style={{ fontSize: 13, color: "#5c6b80", lineHeight: 1.8, margin: 0 }}>

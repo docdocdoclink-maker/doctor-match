@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Topbar from "../../components/Topbar";
-import { getFeeForJobType, formatYen, getPaymentLinkForJobType } from "../../../lib/pricing";
+import { getFeeForJobType, formatYen, getPaymentLinkForJobType, isFreeCampaignActive } from "../../../lib/pricing";
 
 function formatDateTime(sqliteText) {
   if (!sqliteText) return "";
@@ -312,7 +312,11 @@ export default function JobDetailPage() {
 
             {isDoctor && !job.hired && (
               <div style={{ borderTop: "1px solid #eee", paddingTop: 16 }}>
-                <p className="fee-note">※ 成約時のみ病院側に手数料が発生します（医師側は完全無料）</p>
+                <p className="fee-note">
+                  {isFreeCampaignActive()
+                    ? "※ 今年度中は病院側の手数料も無料キャンペーン中です（医師側は元々完全無料）"
+                    : "※ 成約時のみ病院側に手数料が発生します（医師側は完全無料）"}
+                </p>
               </div>
             )}
 
@@ -321,7 +325,11 @@ export default function JobDetailPage() {
                 {job.hired ? (
                   <>
                     <span className="hired-badge">✓ 成約済み（{formatDateTime(job.hired_at)}）</span>
-                    {getPaymentLinkForJobType(job.type) ? (
+                    {isFreeCampaignActive() ? (
+                      <p className="fee-note">
+                        🎉 今年度中（2027年3月31日まで）はキャンペーンにより手数料は無料です。お支払いは不要です。
+                      </p>
+                    ) : getPaymentLinkForJobType(job.type) ? (
                       <p className="fee-note">
                         手数料 {formatYen(getFeeForJobType(job.type))} のお支払いは
                         <a
@@ -344,7 +352,11 @@ export default function JobDetailPage() {
                     <button className="btn-success" onClick={handleHire} disabled={hiring}>
                       {hiring ? "処理中..." : "採用が決まりました（成約報告）"}
                     </button>
-                    <p className="fee-note">成約報告をすると、運営から手数料 {formatYen(getFeeForJobType(job.type))} の請求書をお送りします。</p>
+                    <p className="fee-note">
+                      {isFreeCampaignActive()
+                        ? "🎉 今年度中（2027年3月31日まで）はキャンペーンにより手数料は無料です。"
+                        : `成約報告をすると、運営から手数料 ${formatYen(getFeeForJobType(job.type))} の請求書をお送りします。`}
+                    </p>
                   </>
                 )}
               </div>

@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { isFreeCampaignActive } from "../../lib/pricing";
 
 export default function WelcomeModal({ session, onDismiss }) {
   const [closing, setClosing] = useState(false);
@@ -49,7 +50,11 @@ export default function WelcomeModal({ session, onDismiss }) {
             <li>ご応募・お問い合わせがあれば、<strong>医師と直接チャットでやり取り</strong>いただけます。</li>
             <li>チャットにメッセージが届くと、<strong>登録したメールアドレスに通知</strong>が届きます。</li>
             <li>
-              DocLinkは仲介手数料を業界最安水準（成約時のみ・スポット5,000円／非常勤10,000円／常勤20,000円）に抑えています。その分を、ぜひ<strong>医師の待遇（給与・条件）に反映</strong>いただくようお願いします。医師の皆様にも、その旨をご案内しています。
+              DocLinkは仲介手数料を業界最安水準（成約時のみ・スポット5,000円／非常勤10,000円／常勤20,000円）に抑えています。
+              {isFreeCampaignActive() && (
+                <> <strong>今年度中（2027年3月31日まで）はキャンペーンとして、この手数料も無料</strong>です。</>
+              )}
+              {" "}その分を、ぜひ<strong>医師の待遇（給与・条件）に反映</strong>いただくようお願いします。医師の皆様にも、その旨をご案内しています。
             </li>
           </ul>
         )}
