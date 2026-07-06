@@ -31,7 +31,7 @@ export async function POST(request) {
   }
 
   const body = await request.json();
-  const { title, type, area, dept, dateText, payText, desc, emergencyVolume, nightDutyNote, backupNote, hospitalWebsite, access } = body;
+  const { title, type, area, dept, dateText, payText, desc, emergencyVolume, outpatientVolume, nightDutyNote, backupNote, hospitalWebsite, access } = body;
   if (!title || !type || !area || !dept || !dateText || !payText || !desc) {
     return NextResponse.json({ error: "すべての項目を入力してください" }, { status: 400 });
   }
@@ -42,8 +42,8 @@ export async function POST(request) {
 
   const info = db
     .prepare(
-      `INSERT INTO jobs (hospital_user_id, hospital_name, title, type, area, dept, date_text, pay_text, desc, emergency_volume, night_duty_note, backup_note, hospital_website, access, confirmed_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`
+      `INSERT INTO jobs (hospital_user_id, hospital_name, title, type, area, dept, date_text, pay_text, desc, emergency_volume, outpatient_volume, night_duty_note, backup_note, hospital_website, access, confirmed_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`
     )
     .run(
       session.userId,
@@ -56,6 +56,7 @@ export async function POST(request) {
       payText,
       desc,
       (emergencyVolume || "").trim() || null,
+      (outpatientVolume || "").trim() || null,
       (nightDutyNote || "").trim() || null,
       (backupNote || "").trim() || null,
       website || null,

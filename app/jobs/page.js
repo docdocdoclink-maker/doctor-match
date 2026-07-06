@@ -292,50 +292,66 @@ function AlertPanel({ areas, types, depts, alert, onSave }) {
   const [area, setArea] = useState(alert?.area || "");
   const [type, setType] = useState(alert?.type || "");
   const [dept, setDept] = useState(alert?.dept || "");
+  const [note, setNote] = useState(alert?.note || "");
 
   return (
-    <div className="card" style={{ marginBottom: 16, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end" }}>
-      <label className="field" style={{ marginBottom: 0 }}>
-        エリア
-        <select value={area} onChange={(e) => setArea(e.target.value)}>
-          <option value="">指定なし</option>
-          {areas.map((a) => (
-            <option key={a} value={a}>
-              {a}
-            </option>
-          ))}
-        </select>
+    <div className="card" style={{ marginBottom: 16 }}>
+      <p style={{ fontSize: 12, color: "#6b7280", margin: "0 0 12px" }}>
+        ここで設定した条件は、新着求人の通知に使われるほか、<strong>あなたにメッセージを送る病院にも「希望条件」として表示</strong>されます。
+      </p>
+      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end", marginBottom: 12 }}>
+        <label className="field" style={{ marginBottom: 0 }}>
+          エリア
+          <select value={area} onChange={(e) => setArea(e.target.value)}>
+            <option value="">指定なし</option>
+            {areas.map((a) => (
+              <option key={a} value={a}>
+                {a}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="field" style={{ marginBottom: 0 }}>
+          形態
+          <select value={type} onChange={(e) => setType(e.target.value)}>
+            <option value="">指定なし</option>
+            {types.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="field" style={{ marginBottom: 0 }}>
+          診療科
+          <select value={dept} onChange={(e) => setDept(e.target.value)}>
+            <option value="">指定なし</option>
+            {depts.map((d) => (
+              <option key={d} value={d}>
+                {d}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <label className="field">
+        希望条件メモ（任意・病院に表示されます）
+        <textarea
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="例）土日希望、非常勤メインで探しています"
+        />
       </label>
-      <label className="field" style={{ marginBottom: 0 }}>
-        形態
-        <select value={type} onChange={(e) => setType(e.target.value)}>
-          <option value="">指定なし</option>
-          {types.map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="field" style={{ marginBottom: 0 }}>
-        診療科
-        <select value={dept} onChange={(e) => setDept(e.target.value)}>
-          <option value="">指定なし</option>
-          {depts.map((d) => (
-            <option key={d} value={d}>
-              {d}
-            </option>
-          ))}
-        </select>
-      </label>
-      <button className="btn-primary" onClick={() => onSave({ active: true, area, type, dept })}>
-        この条件で通知を受け取る
-      </button>
-      {!!alert?.active && (
-        <button className="btn-outline" onClick={() => onSave({ active: false, area: "", type: "", dept: "" })}>
-          アラートを解除
+      <div style={{ display: "flex", gap: 8 }}>
+        <button className="btn-primary" onClick={() => onSave({ active: true, area, type, dept, note })}>
+          この条件で通知を受け取る
         </button>
-      )}
+        {!!alert?.active && (
+          <button className="btn-outline" onClick={() => onSave({ active: false, area: "", type: "", dept: "", note })}>
+            アラートを解除
+          </button>
+        )}
+      </div>
     </div>
   );
 }

@@ -50,7 +50,9 @@ export default function Topbar({ session }) {
               )}
             </Link>
             <span className="role">{session.role === "hospital" ? "🏥 病院" : "🩺 医師"}</span>
-            <span>{session.displayName} さん</span>
+            <Link href="/account" style={{ color: "inherit", textDecoration: "none" }}>
+              {session.displayName} さん
+            </Link>
             <button className="btn-outline" onClick={handleLogout}>
               ログアウト
             </button>

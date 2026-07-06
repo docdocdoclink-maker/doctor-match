@@ -60,7 +60,7 @@ export default function WelcomeModal({ session, onDismiss }) {
               {isFreeCampaignActive() && (
                 <> <strong>今年度中（2027年3月31日まで）はキャンペーンとして、この手数料も無料</strong>です。</>
               )}
-              {" "}その分を、ぜひ<strong>医師の待遇（給与・条件）に反映</strong>いただくようお願いします。医師の皆様にも、その旨をご案内しています。
+              {" "}その分を、ぜひ<strong>医師の待遇（給与・条件）に反映</strong>いただくようお願いします。
             </li>
           </ul>
         )}

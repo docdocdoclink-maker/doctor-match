@@ -8,7 +8,7 @@ export async function GET() {
     return NextResponse.json({ alert: null });
   }
   const alert = db.prepare("SELECT * FROM alerts WHERE user_id = ?").get(session.userId);
-  return NextResponse.json({ alert: alert || { active: 0, area: "", type: "", dept: "" } });
+  return NextResponse.json({ alert: alert || { active: 0, area: "", type: "", dept: "", note: "" } });
 }
 
 export async function POST(request) {
@@ -17,12 +17,12 @@ export async function POST(request) {
     return NextResponse.json({ error: "医師アカウントでログインしてください" }, { status: 403 });
   }
 
-  const { active, area, type, dept } = await request.json();
+  const { active, area, type, dept, note } = await request.json();
 
   db.prepare(
-    `INSERT INTO alerts (user_id, active, area, type, dept) VALUES (?, ?, ?, ?, ?)
-     ON CONFLICT(user_id) DO UPDATE SET active=excluded.active, area=excluded.area, type=excluded.type, dept=excluded.dept`
-  ).run(session.userId, active ? 1 : 0, area || "", type || "", dept || "");
+    `INSERT INTO alerts (user_id, active, area, type, dept, note) VALUES (?, ?, ?, ?, ?, ?)
+     ON CONFLICT(user_id) DO UPDATE SET active=excluded.active, area=excluded.area, type=excluded.type, dept=excluded.dept, note=excluded.note`
+  ).run(session.userId, active ? 1 : 0, area || "", type || "", dept || "", note || "");
 
   const alert = db.prepare("SELECT * FROM alerts WHERE user_id = ?").get(session.userId);
   return NextResponse.json({ alert });

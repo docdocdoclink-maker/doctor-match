@@ -65,6 +65,7 @@ function rankQuickReplies(templates, lastIncomingText) {
 // leave some of these blank.
 function WorkRealitySection({ job }) {
   const items = [
+    { label: "外来患者数の目安", value: job.outpatient_volume },
     { label: "救急車搬送件数の目安", value: job.emergency_volume },
     { label: "当直体制", value: job.night_duty_note },
     { label: "バックアップ体制", value: job.backup_note },
@@ -316,6 +317,9 @@ export default function JobDetailPage() {
               </span>
               {isOwnerHospital && (
                 <>
+                  <Link href={`/jobs/${id}/edit`} className="btn-outline" style={{ fontSize: 11, padding: "3px 10px", textDecoration: "none" }}>
+                    内容を編集する
+                  </Link>
                   <button
                     type="button"
                     className="btn-outline"
@@ -465,26 +469,37 @@ export default function JobDetailPage() {
                 </label>
 
                 {(() => {
-                  const activeSpecialty = conversations.find((c) => c.doctorUserId === activeDoctorId)?.specialty;
+                  const active = conversations.find((c) => c.doctorUserId === activeDoctorId);
+                  if (!active) return null;
+                  const desiredParts = [active.desiredArea, active.desiredType, active.desiredDept].filter(Boolean);
                   return (
-                    activeSpecialty && (
-                      <div
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: 4,
-                          marginTop: 8,
-                          fontSize: 12,
-                          fontWeight: 700,
-                          color: "#8a5a00",
-                          background: "#fff3cd",
-                          borderRadius: 999,
-                          padding: "3px 10px",
-                        }}
-                      >
-                        🏅 専門医：{activeSpecialty}
-                      </div>
-                    )
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
+                      {active.specialty && (
+                        <div
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 4,
+                            alignSelf: "flex-start",
+                            fontSize: 12,
+                            fontWeight: 700,
+                            color: "#8a5a00",
+                            background: "#fff3cd",
+                            borderRadius: 999,
+                            padding: "3px 10px",
+                          }}
+                        >
+                          🏅 専門医：{active.specialty}
+                        </div>
+                      )}
+                      {(desiredParts.length > 0 || active.desiredNote) && (
+                        <div style={{ fontSize: 12, color: "#374151", background: "#f9fafb", borderRadius: 8, padding: "8px 10px" }}>
+                          <strong>この医師の希望条件：</strong>
+                          {desiredParts.length > 0 && <span>{desiredParts.join(" / ")}</span>}
+                          {active.desiredNote && <div style={{ marginTop: 2, color: "#4b5563" }}>{active.desiredNote}</div>}
+                        </div>
+                      )}
+                    </div>
                   );
                 })()}
 

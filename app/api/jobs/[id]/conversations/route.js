@@ -19,10 +19,12 @@ export async function GET(request, { params }) {
   const rows = db
     .prepare(
       `SELECT c.doctor_user_id, c.anonymous, u.display_name, u.specialty,
+              a.area AS desired_area, a.type AS desired_type, a.dept AS desired_dept, a.note AS desired_note,
               (SELECT text FROM messages m WHERE m.job_id = c.job_id AND m.doctor_user_id = c.doctor_user_id ORDER BY m.created_at DESC LIMIT 1) AS last_text,
               (SELECT created_at FROM messages m WHERE m.job_id = c.job_id AND m.doctor_user_id = c.doctor_user_id ORDER BY m.created_at DESC LIMIT 1) AS last_at
        FROM conversations c
        JOIN users u ON u.id = c.doctor_user_id
+       LEFT JOIN alerts a ON a.user_id = c.doctor_user_id
        WHERE c.job_id = ?
        ORDER BY last_at DESC`
     )
@@ -35,6 +37,10 @@ export async function GET(request, { params }) {
     anonymous: !!r.anonymous,
     lastText: r.last_text,
     lastAt: r.last_at,
+    desiredArea: r.desired_area || null,
+    desiredType: r.desired_type || null,
+    desiredDept: r.desired_dept || null,
+    desiredNote: r.desired_note || null,
   }));
 
   return NextResponse.json({ conversations });

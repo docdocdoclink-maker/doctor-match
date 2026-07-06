@@ -82,11 +82,6 @@ function LoginForm() {
             会員登録
           </Link>
         </p>
-        {process.env.NODE_ENV !== "production" && (
-          <p className="fee-note" style={{ marginTop: 6 }}>
-            デモ用アカウント：demo-hospital@example.com / password123（病院側サンプル）
-          </p>
-        )}
       </div>
     </div>
   );
