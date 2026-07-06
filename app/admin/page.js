@@ -408,12 +408,12 @@ function ChatsTab() {
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1.4fr", gap: 20, alignItems: "start" }}>
       <div>
         <p className="fee-note" style={{ marginTop: 0 }}>
-          運営はやり取りの内容を通常閲覧しません。ここには、医師または病院が自ら記録を開示したやり取りのみが表示されます。閲覧は記録確認のみを目的とし、紛争の仲介・解決は行いません。
+          運営はやり取りの内容を通常閲覧しません。ここには、医師または病院から記録の開示を依頼されたやり取りのみが表示されます。閲覧は記録確認のみを目的とし、紛争の仲介・解決は行いません。
         </p>
         {conversations === null ? (
           <div className="loading-state">読み込み中...</div>
         ) : conversations.length === 0 ? (
-          <div className="empty-state">記録が開示されているやり取りはありません。</div>
+          <div className="empty-state">開示依頼があるやり取りはありません。</div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {conversations.map((c) => (
@@ -436,7 +436,7 @@ function ChatsTab() {
                   {c.messageCount}件 ・ 最終: {formatDateTime(c.lastMessageAt)}
                 </div>
                 <div style={{ fontSize: 11, color: "#c0392b", marginTop: 4 }}>
-                  🚩 {c.disputeFlaggedBy === "doctor" ? "医師" : "病院"}が記録を開示（{formatDateTime(c.disputeFlaggedAt)}）
+                  🚩 {c.disputeFlaggedBy === "doctor" ? "医師" : "病院"}から開示依頼（{formatDateTime(c.disputeFlaggedAt)}）
                   {c.disputeReason && <div style={{ color: "#7a5b00", marginTop: 2 }}>理由: {c.disputeReason}</div>}
                 </div>
               </button>

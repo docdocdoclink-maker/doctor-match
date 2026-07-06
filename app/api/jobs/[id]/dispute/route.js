@@ -48,7 +48,7 @@ export async function POST(request, { params }) {
 
   db.prepare(
     "INSERT INTO messages (job_id, doctor_user_id, sender_user_id, sender_role, text) VALUES (?, ?, ?, 'system', ?)"
-  ).run(id, doctorUserId, session.userId, "このやり取りの記録が運営に開示されました（運営が仲介・解決を行うものではありません）。");
+  ).run(id, doctorUserId, session.userId, "このやり取りの記録の開示が運営に依頼されました（運営が仲介・解決を行うものではありません）。");
 
   return NextResponse.json({ ok: true });
 }

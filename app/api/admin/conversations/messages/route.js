@@ -21,7 +21,7 @@ export async function GET(request) {
     .prepare("SELECT dispute_flagged_at FROM conversations WHERE job_id = ? AND doctor_user_id = ?")
     .get(jobId, doctorId);
   if (!conv?.dispute_flagged_at) {
-    return NextResponse.json({ error: "この会話は記録が開示されていません" }, { status: 403 });
+    return NextResponse.json({ error: "この会話は開示が依頼されていません" }, { status: 403 });
   }
 
   const messages = db
