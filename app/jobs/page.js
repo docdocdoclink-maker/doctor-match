@@ -11,6 +11,8 @@ export default function JobsPage() {
   const [alertPanelOpen, setAlertPanelOpen] = useState(false);
   const [filters, setFilters] = useState({ area: "", type: "", dept: "" });
   const [showWelcome, setShowWelcome] = useState(false);
+  const [jobSeeking, setJobSeeking] = useState(true);
+  const [jobSeekingBusy, setJobSeekingBusy] = useState(false);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -18,6 +20,7 @@ export default function JobsPage() {
       .then((s) => {
         setSession(s);
         if (s.loggedIn && !s.hasSeenIntro) setShowWelcome(true);
+        if (s.role === "doctor") setJobSeeking(s.jobSeeking);
       });
     fetch("/api/jobs")
       .then((r) => r.json())
@@ -65,6 +68,18 @@ export default function JobsPage() {
 
   const alertMatchCount = jobs ? jobs.filter(matchesAlert).length : 0;
 
+  async function toggleJobSeeking() {
+    setJobSeekingBusy(true);
+    const next = !jobSeeking;
+    const res = await fetch("/api/doctor/job-seeking", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ active: next }),
+    });
+    if (res.ok) setJobSeeking(next);
+    setJobSeekingBusy(false);
+  }
+
   return (
     <>
       <Topbar session={session} />
@@ -82,9 +97,37 @@ export default function JobsPage() {
         ) : (
           <>
             <h1 style={{ fontSize: 22, margin: "0 0 4px" }}>非常勤・当直バイト求人（関東）</h1>
-            <p style={{ color: "#6b7280", fontSize: 13, margin: "0 0 20px" }}>
+            <p style={{ color: "#6b7280", fontSize: 13, margin: "0 0 12px" }}>
               全ての求人を検索・閲覧できます。応募・連絡は病院と直接やり取りできます。
             </p>
+            {session?.loggedIn && session.role === "doctor" && (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  background: jobSeeking ? "#eef4ff" : "#f3f4f6",
+                  border: `1px solid ${jobSeeking ? "#c7dcff" : "#e5e7eb"}`,
+                  borderRadius: 8,
+                  padding: "8px 12px",
+                  fontSize: 13,
+                  marginBottom: 16,
+                }}
+              >
+                <span style={{ color: jobSeeking ? "#1a56db" : "#6b7280", fontWeight: 700 }}>
+                  {jobSeeking ? "🟢 今は転職・アルバイト探し中" : "⚪ 今は募集のお声がけを受け付けていません"}
+                </span>
+                <button
+                  type="button"
+                  className="btn-outline"
+                  style={{ fontSize: 12, padding: "4px 10px" }}
+                  onClick={toggleJobSeeking}
+                  disabled={jobSeekingBusy}
+                >
+                  {jobSeekingBusy ? "更新中..." : jobSeeking ? "受け付けを止める" : "受け付けを再開する"}
+                </button>
+              </div>
+            )}
           </>
         )}
 

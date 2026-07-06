@@ -40,6 +40,12 @@ export async function POST(request, { params }) {
       { status: 404 }
     );
   }
+  if (!doctor.job_seeking) {
+    return NextResponse.json(
+      { error: "この医師は現在、募集のお声がけを受け付けていません" },
+      { status: 403 }
+    );
+  }
 
   db.prepare(
     "INSERT INTO conversations (job_id, doctor_user_id, anonymous) VALUES (?, ?, 0) ON CONFLICT(job_id, doctor_user_id) DO NOTHING"

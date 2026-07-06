@@ -8,7 +8,7 @@ export async function GET() {
     return NextResponse.json({ loggedIn: false });
   }
   const user = db
-    .prepare("SELECT has_seen_intro, verification_status FROM users WHERE id = ?")
+    .prepare("SELECT has_seen_intro, verification_status, job_seeking FROM users WHERE id = ?")
     .get(session.userId);
   return NextResponse.json({
     loggedIn: true,
@@ -17,5 +17,6 @@ export async function GET() {
     displayName: session.displayName,
     hasSeenIntro: !!user?.has_seen_intro,
     verificationStatus: user?.verification_status || "pending",
+    jobSeeking: !!user?.job_seeking,
   });
 }
