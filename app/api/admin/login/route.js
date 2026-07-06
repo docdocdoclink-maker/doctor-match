@@ -38,7 +38,9 @@ export async function POST(request) {
   session.adminOtpExpiresAt = Date.now() + OTP_VALID_MS;
   await session.save();
 
-  await sendMail({
+  // Fire-and-forget: don't make the login response wait on SMTP, which can
+  // be slow enough (or hang outright) to make the login button look broken.
+  sendMail({
     to: ADMIN_EMAIL,
     subject: "【DocLink】管理画面ログインの確認コード",
     text: `管理画面へのログインリクエストがありました。\n\n確認コード: ${code}\n\n（10分間有効です。心当たりがない場合はこのメールを無視してください。）`,

@@ -24,6 +24,7 @@ export default function AdminPage() {
   const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
   const [loginError, setLoginError] = useState("");
+  const [loginBusy, setLoginBusy] = useState(false);
   const [otpBusy, setOtpBusy] = useState(false);
   const [tab, setTab] = useState("pending");
 
@@ -34,21 +35,28 @@ export default function AdminPage() {
   async function handleLogin(e) {
     e.preventDefault();
     setLoginError("");
-    const res = await fetch("/api/admin/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      setLoginError(data.error || "ログインに失敗しました");
-      return;
-    }
-    setPassword("");
-    if (data.otpRequired) {
-      setStep("otp");
-    } else {
-      setAuthed(true);
+    setLoginBusy(true);
+    try {
+      const res = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setLoginError(data.error || "ログインに失敗しました");
+        return;
+      }
+      setPassword("");
+      if (data.otpRequired) {
+        setStep("otp");
+      } else {
+        setAuthed(true);
+      }
+    } catch (err) {
+      setLoginError("通信エラーが発生しました。もう一度お試しください。");
+    } finally {
+      setLoginBusy(false);
     }
   }
 
@@ -56,19 +64,24 @@ export default function AdminPage() {
     e.preventDefault();
     setLoginError("");
     setOtpBusy(true);
-    const res = await fetch("/api/admin/verify-otp", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code: otp }),
-    });
-    const data = await res.json();
-    setOtpBusy(false);
-    if (!res.ok) {
-      setLoginError(data.error || "確認に失敗しました");
-      return;
+    try {
+      const res = await fetch("/api/admin/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: otp }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setLoginError(data.error || "確認に失敗しました");
+        return;
+      }
+      setOtp("");
+      setAuthed(true);
+    } catch (err) {
+      setLoginError("通信エラーが発生しました。もう一度お試しください。");
+    } finally {
+      setOtpBusy(false);
     }
-    setOtp("");
-    setAuthed(true);
   }
 
   if (!authed && step === "otp") {
@@ -111,8 +124,8 @@ export default function AdminPage() {
               管理者パスワード
               <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
             </label>
-            <button type="submit" className="btn-primary" style={{ width: "100%" }}>
-              ログイン
+            <button type="submit" className="btn-primary" style={{ width: "100%" }} disabled={loginBusy}>
+              {loginBusy ? "ログイン中..." : "ログイン"}
             </button>
           </form>
         </div>
