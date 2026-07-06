@@ -15,6 +15,15 @@ export async function GET(request) {
     return NextResponse.json({ error: "jobId, doctorId が必要です" }, { status: 400 });
   }
 
+  // Belt-and-suspenders: even if the UI only lists flagged conversations,
+  // refuse to serve message content for one that isn't actually flagged.
+  const conv = db
+    .prepare("SELECT dispute_flagged_at FROM conversations WHERE job_id = ? AND doctor_user_id = ?")
+    .get(jobId, doctorId);
+  if (!conv?.dispute_flagged_at) {
+    return NextResponse.json({ error: "この会話は運営への相談が申請されていません" }, { status: 403 });
+  }
+
   const messages = db
     .prepare("SELECT * FROM messages WHERE job_id = ? AND doctor_user_id = ? ORDER BY created_at ASC")
     .all(jobId, doctorId);

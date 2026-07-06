@@ -407,10 +407,13 @@ function ChatsTab() {
   return (
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1.4fr", gap: 20, alignItems: "start" }}>
       <div>
+        <p className="fee-note" style={{ marginTop: 0 }}>
+          運営はやり取りの内容を通常閲覧しません。ここには、医師または病院が「運営に相談する」から自ら申請したやり取りのみが表示されます。
+        </p>
         {conversations === null ? (
           <div className="loading-state">読み込み中...</div>
         ) : conversations.length === 0 ? (
-          <div className="empty-state">チャットがありません。</div>
+          <div className="empty-state">運営への相談申請があるやり取りはありません。</div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {conversations.map((c) => (
@@ -431,6 +434,10 @@ function ChatsTab() {
                 </div>
                 <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>
                   {c.messageCount}件 ・ 最終: {formatDateTime(c.lastMessageAt)}
+                </div>
+                <div style={{ fontSize: 11, color: "#c0392b", marginTop: 4 }}>
+                  🚩 {c.disputeFlaggedBy === "doctor" ? "医師" : "病院"}から相談申請（{formatDateTime(c.disputeFlaggedAt)}）
+                  {c.disputeReason && <div style={{ color: "#7a5b00", marginTop: 2 }}>理由: {c.disputeReason}</div>}
                 </div>
               </button>
             ))}

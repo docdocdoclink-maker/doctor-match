@@ -26,7 +26,16 @@ export async function GET(request, { params }) {
     const job = db.prepare("SELECT * FROM jobs WHERE id = ?").get(message.job_id);
     const isThreadDoctor = session.role === "doctor" && session.userId === message.doctor_user_id;
     const isOwnerHospital = session.role === "hospital" && job && job.hospital_user_id === session.userId;
-    authorized = isThreadDoctor || isOwnerHospital || !!session.isAdmin;
+    // Admin only gets access to a chat attachment once a party to that
+    // specific conversation has flagged it for dispute review — same rule
+    // as message text (see app/api/jobs/[id]/dispute, app/terms/page.js).
+    const conv = job
+      ? db
+          .prepare("SELECT dispute_flagged_at FROM conversations WHERE job_id = ? AND doctor_user_id = ?")
+          .get(job.id, message.doctor_user_id)
+      : null;
+    const isFlaggedForAdmin = !!session.isAdmin && !!conv?.dispute_flagged_at;
+    authorized = isThreadDoctor || isOwnerHospital || isFlaggedForAdmin;
     displayName = message.attachment_name || filename;
   } else if (document) {
     // The doctor themself, or an admin reviewing the signup, can always

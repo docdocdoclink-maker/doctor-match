@@ -98,6 +98,54 @@ function WorkRealitySection({ job }) {
   );
 }
 
+function DisputeReport({ jobId, doctorUserId }) {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setSending(true);
+    const res = await fetch(`/api/jobs/${jobId}/dispute`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ doctorUserId, reason }),
+    });
+    setSending(false);
+    if (res.ok) setSent(true);
+  }
+
+  if (sent) {
+    return <p className="fee-note">✓ 運営への相談を申請しました。内容を確認のうえご連絡します。</p>;
+  }
+
+  if (!open) {
+    return (
+      <button type="button" className="btn-outline" style={{ fontSize: 11, padding: "3px 10px" }} onClick={() => setOpen(true)}>
+        🚩 やり取りに問題がある場合は運営に相談する
+      </button>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} style={{ background: "#f9fafb", borderRadius: 8, padding: 12 }}>
+      <label className="field" style={{ marginBottom: 8 }}>
+        相談内容（任意）
+        <textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="例）成約したのに手数料の連絡がありません" />
+      </label>
+      <div style={{ display: "flex", gap: 8 }}>
+        <button type="submit" className="btn-primary" disabled={sending}>
+          {sending ? "送信中..." : "運営に相談を申請する"}
+        </button>
+        <button type="button" className="btn-outline" onClick={() => setOpen(false)}>
+          閉じる
+        </button>
+      </div>
+    </form>
+  );
+}
+
 export default function JobDetailPage() {
   const { id } = useParams();
   const [session, setSession] = useState(null);
@@ -752,8 +800,10 @@ export default function JobDetailPage() {
               </p>
             )}
             <p className="fee-note">
-              採否・条件交渉は病院・医師間で直接行ってください（運営が仲介・あっせんすることはありません）。不正利用防止のため運営が内容を確認する場合があります。
+              採否・条件交渉は病院・医師間で直接行ってください（運営が仲介・あっせんすることはありません）。運営はやり取りの内容を通常閲覧しません。手数料の支払いに関する紛争、その他トラブルが生じた場合に限り、ご自身で下記から相談を申請いただくことで、運営が内容を確認できるようになります。
             </p>
+
+            {session?.loggedIn && (isDoctor || activeDoctorId) && <DisputeReport jobId={id} doctorUserId={isDoctor ? session.userId : activeDoctorId} />}
 
             <details style={{ marginTop: 12, background: "#f9fafb", borderRadius: 8, padding: "10px 12px" }}>
               <summary style={{ fontSize: 12, fontWeight: 700, color: "#4b5563", cursor: "pointer" }}>
