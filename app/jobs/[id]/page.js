@@ -109,6 +109,8 @@ export default function JobDetailPage() {
   const [anonymous, setAnonymous] = useState(false);
   const [shareDocuments, setShareDocuments] = useState(false);
   const [sharedDocuments, setSharedDocuments] = useState([]);
+  const [hireConfirmedByDoctor, setHireConfirmedByDoctor] = useState(false);
+  const [confirmingHire, setConfirmingHire] = useState(false);
   const [text, setText] = useState("");
   const [file, setFile] = useState(null);
   const [sending, setSending] = useState(false);
@@ -180,6 +182,7 @@ export default function JobDetailPage() {
     setAnonymous(!!data.anonymous);
     setShareDocuments(!!data.shareDocuments);
     setSharedDocuments(data.documents || []);
+    setHireConfirmedByDoctor(!!data.hireConfirmedByDoctor);
   }
 
   async function handleSend(e) {
@@ -214,12 +217,26 @@ export default function JobDetailPage() {
 
   async function handleHire() {
     setHiring(true);
-    const res = await fetch(`/api/jobs/${id}/hire`, { method: "POST" });
+    const res = await fetch(`/api/jobs/${id}/hire`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ doctorUserId: activeDoctorId || null }),
+    });
     if (res.ok) {
       await loadJob();
-      if (activeDoctorId) await loadMessages(activeDoctorId);
+      if (activeDoctorId) {
+        await loadMessages(activeDoctorId);
+        await loadConversations();
+      }
     }
     setHiring(false);
+  }
+
+  async function handleConfirmHire() {
+    setConfirmingHire(true);
+    const res = await fetch(`/api/jobs/${id}/confirm-hire`, { method: "POST" });
+    if (res.ok) await loadMessages(activeDoctorId);
+    setConfirmingHire(false);
   }
 
   async function handleConfirm() {
@@ -391,6 +408,13 @@ export default function JobDetailPage() {
                 {job.hired ? (
                   <>
                     <span className="hired-badge">✓ 成約済み（{formatDateTime(job.hired_at)}）</span>
+                    {job.hired_doctor_user_id && (
+                      <p className="fee-note">
+                        {conversations.find((c) => c.doctorUserId === job.hired_doctor_user_id)?.hireConfirmedByDoctor
+                          ? "✓ 医師も採用について同意済みです（双方合意済み）"
+                          : "医師の確認待ちです（まだ同意していません）"}
+                      </p>
+                    )}
                     {isFreeCampaignActive() ? (
                       <p className="fee-note">
                         🎉 今年度中（2027年3月31日まで）はキャンペーンにより手数料は無料です。お支払いは不要です。
@@ -419,6 +443,11 @@ export default function JobDetailPage() {
                       {hiring ? "処理中..." : "採用が決まりました（成約報告）"}
                     </button>
                     <p className="fee-note">
+                      {activeDoctorId
+                        ? "上で選択中の医師が採用されたものとして報告します。報告後、医師本人にも確認をお願いします。"
+                        : "会話中の医師を選んでから報告すると、その医師に採用決定の通知と確認依頼が届きます。"}
+                    </p>
+                    <p className="fee-note">
                       {isFreeCampaignActive()
                         ? "🎉 今年度中（2027年3月31日まで）はキャンペーンにより手数料は無料です。"
                         : `成約報告をすると、運営から手数料 ${formatYen(getFeeForJobType(job.type))} の請求書をお送りします。`}
@@ -431,6 +460,22 @@ export default function JobDetailPage() {
             {!!job.hired && !isOwnerHospital && (
               <div style={{ borderTop: "1px solid #eee", paddingTop: 16, marginTop: 16 }}>
                 <span className="hired-badge">✓ 成約済み（{formatDateTime(job.hired_at)}）</span>
+                {isDoctor && job.hired_doctor_user_id === session.userId && (
+                  <div style={{ marginTop: 10 }}>
+                    {hireConfirmedByDoctor ? (
+                      <p className="fee-note">✓ あなたも採用について同意済みです（双方合意済み）</p>
+                    ) : (
+                      <>
+                        <button className="btn-success" onClick={handleConfirmHire} disabled={confirmingHire}>
+                          {confirmingHire ? "処理中..." : "採用について同意する"}
+                        </button>
+                        <p className="fee-note">
+                          病院からの採用報告の内容に相違なければ、こちらから確認をお願いします。合意の記録として残ります。
+                        </p>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>

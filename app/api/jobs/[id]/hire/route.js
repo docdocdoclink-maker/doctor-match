@@ -24,11 +24,16 @@ export async function POST(request, { params }) {
     return NextResponse.json({ error: "既に成約済みです" }, { status: 409 });
   }
 
-  db.prepare(
-    "UPDATE jobs SET hired = 1, hired_at = datetime('now', 'localtime') WHERE id = ?"
-  ).run(id);
+  const { doctorUserId } = await request.json().catch(() => ({}));
+  const hiredDoctorUserId = doctorUserId ? Number(doctorUserId) : null;
 
-  // Notify every doctor who has an open conversation on this job that it's filled.
+  db.prepare(
+    "UPDATE jobs SET hired = 1, hired_at = datetime('now', 'localtime'), hired_doctor_user_id = ? WHERE id = ?"
+  ).run(hiredDoctorUserId, id);
+
+  // Tell the hired doctor apart from everyone else who was just talking to
+  // this hospital about the same posting — they get a different message
+  // and a chance to confirm the hire themselves (see confirm-hire route).
   const doctorIds = db
     .prepare("SELECT doctor_user_id FROM conversations WHERE job_id = ?")
     .all(id)
@@ -37,14 +42,22 @@ export async function POST(request, { params }) {
   const insertMsg = db.prepare(
     "INSERT INTO messages (job_id, doctor_user_id, sender_user_id, sender_role, text) VALUES (?, ?, ?, 'system', ?)"
   );
-  for (const doctorUserId of doctorIds) {
-    insertMsg.run(id, doctorUserId, session.userId, "病院が「採用決定」を報告しました。");
-    const doctor = db.prepare("SELECT * FROM users WHERE id = ?").get(doctorUserId);
+  for (const conversingDoctorId of doctorIds) {
+    const isHiredDoctor = hiredDoctorUserId && conversingDoctorId === hiredDoctorUserId;
+    const message = isHiredDoctor
+      ? "病院があなたの採用を決定したと報告しました。内容に相違なければ、下の「採用について同意する」から確認をお願いします。"
+      : "この求人は成約となり、募集が終了しました。";
+    insertMsg.run(id, conversingDoctorId, session.userId, message);
+    const doctor = db.prepare("SELECT * FROM users WHERE id = ?").get(conversingDoctorId);
     if (doctor?.email_notify) {
       sendMail({
         to: doctor.email,
-        subject: `【DocLink】${job.title} の採用が決定しました`,
-        text: `${job.hospital_name}が「採用決定」を報告しました。\n\n求人ページ: ${APP_URL}/jobs/${id}`,
+        subject: isHiredDoctor
+          ? `【DocLink】${job.title} の採用が決定しました`
+          : `【DocLink】${job.title} は募集終了となりました`,
+        text: isHiredDoctor
+          ? `${job.hospital_name}があなたの採用を決定したと報告しました。内容に相違なければ求人ページから確認をお願いします。\n\n求人ページ: ${APP_URL}/jobs/${id}`
+          : `${job.hospital_name}の求人は成約となり、募集が終了しました。\n\n求人ページ: ${APP_URL}/jobs/${id}`,
       }).catch(() => {});
     }
   }

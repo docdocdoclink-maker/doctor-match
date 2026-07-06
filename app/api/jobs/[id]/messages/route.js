@@ -65,7 +65,13 @@ export async function GET(request, { params }) {
         .all(doctorId)
     : [];
 
-  return NextResponse.json({ messages, anonymous: !!conv?.anonymous, shareDocuments: !!conv?.share_documents, documents });
+  return NextResponse.json({
+    messages,
+    anonymous: !!conv?.anonymous,
+    shareDocuments: !!conv?.share_documents,
+    documents,
+    hireConfirmedByDoctor: !!conv?.hire_confirmed_by_doctor_at,
+  });
 }
 
 export async function POST(request, { params }) {
