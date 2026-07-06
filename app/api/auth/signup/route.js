@@ -110,5 +110,11 @@ export async function POST(request) {
     text: `新規登録がありました。内容を確認し、管理画面から承認・却下をお願いします。\n\n名前: ${displayName}\nメール: ${email}${phone ? `\n電話番号: ${phone}` : ""}\n役割: ${role === "doctor" ? "医師" : "病院"}\n\n管理画面: ${APP_URL}/admin`,
   }).catch(() => {});
 
+  sendMail({
+    to: email,
+    subject: "【DocLink】ご登録ありがとうございます",
+    text: `${displayName} 様\n\nDocLinkにご登録いただき、誠にありがとうございます。\n\n現在、運営者が登録内容を確認しております。確認が完了次第（通常1〜2営業日以内）、メールにてお知らせいたします。承認までの間も求人の閲覧は可能です。\n\n心当たりがない場合は、お手数ですが本メールは破棄してください。`,
+  }).catch(() => {});
+
   return NextResponse.json({ ok: true, role });
 }
