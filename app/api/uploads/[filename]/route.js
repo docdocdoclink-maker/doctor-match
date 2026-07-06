@@ -29,8 +29,18 @@ export async function GET(request, { params }) {
     authorized = isThreadDoctor || isOwnerHospital || !!session.isAdmin;
     displayName = message.attachment_name || filename;
   } else if (document) {
-    // The doctor themself, or an admin reviewing the signup, can access these.
-    authorized = session.userId === document.user_id || !!session.isAdmin;
+    // The doctor themself, or an admin reviewing the signup, can always
+    // access these. A hospital can too, but only once the doctor has opted
+    // in to share documents on at least one conversation with that hospital.
+    const sharedWithHospital =
+      session.role === "hospital" &&
+      db
+        .prepare(
+          `SELECT 1 FROM conversations c JOIN jobs j ON j.id = c.job_id
+           WHERE c.doctor_user_id = ? AND j.hospital_user_id = ? AND c.share_documents = 1 LIMIT 1`
+        )
+        .get(document.user_id, session.userId);
+    authorized = session.userId === document.user_id || !!session.isAdmin || !!sharedWithHospital;
     displayName = document.original_name || filename;
   }
 

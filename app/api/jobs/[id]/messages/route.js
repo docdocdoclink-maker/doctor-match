@@ -30,6 +30,13 @@ export async function GET(request, { params }) {
     return NextResponse.json({ messages: [] });
   }
 
+  if (session.role === "hospital") {
+    const job = db.prepare("SELECT * FROM jobs WHERE id = ?").get(id);
+    if (!job || job.hospital_user_id !== session.userId) {
+      return NextResponse.json({ error: "権限がありません" }, { status: 403 });
+    }
+  }
+
   const messages = db
     .prepare(
       "SELECT * FROM messages WHERE job_id = ? AND doctor_user_id = ? ORDER BY created_at ASC"
@@ -48,7 +55,17 @@ export async function GET(request, { params }) {
     ).run(id, doctorId);
   }
 
-  return NextResponse.json({ messages, anonymous: !!conv?.anonymous });
+  // Documents are only ever included once the doctor has opted in to share
+  // them for this specific (job, hospital) conversation.
+  const documents = conv?.share_documents
+    ? db
+        .prepare(
+          "SELECT id, type, original_name, stored_name, created_at FROM documents WHERE user_id = ? ORDER BY created_at DESC"
+        )
+        .all(doctorId)
+    : [];
+
+  return NextResponse.json({ messages, anonymous: !!conv?.anonymous, shareDocuments: !!conv?.share_documents, documents });
 }
 
 export async function POST(request, { params }) {
@@ -64,6 +81,7 @@ export async function POST(request, { params }) {
   const contentType = request.headers.get("content-type") || "";
   let text = "";
   let anonymous = null;
+  let shareDocuments = null;
   let doctorId;
   let attachment = null;
 
@@ -72,6 +90,8 @@ export async function POST(request, { params }) {
     text = (form.get("text") || "").toString().trim();
     const anonRaw = form.get("anonymous");
     if (anonRaw !== null) anonymous = anonRaw === "true";
+    const shareRaw = form.get("shareDocuments");
+    if (shareRaw !== null) shareDocuments = shareRaw === "true";
     const file = form.get("file");
     if (file && typeof file === "object" && file.size > 0) {
       try {
@@ -87,6 +107,7 @@ export async function POST(request, { params }) {
     const body = await request.json();
     text = (body.text || "").trim();
     if (typeof body.anonymous === "boolean") anonymous = body.anonymous;
+    if (typeof body.shareDocuments === "boolean") shareDocuments = body.shareDocuments;
     if (session.role === "hospital") doctorId = Number(body.doctorId);
   }
 
@@ -117,6 +138,14 @@ export async function POST(request, { params }) {
     db.prepare(
       "UPDATE conversations SET anonymous = ? WHERE job_id = ? AND doctor_user_id = ?"
     ).run(anonymous ? 1 : 0, id, doctorId);
+  }
+
+  // Only the doctor can grant/revoke document-sharing consent, and only for
+  // this specific (job, hospital) conversation.
+  if (session.role === "doctor" && shareDocuments !== null) {
+    db.prepare(
+      "UPDATE conversations SET share_documents = ? WHERE job_id = ? AND doctor_user_id = ?"
+    ).run(shareDocuments ? 1 : 0, id, doctorId);
   }
 
   const info = db

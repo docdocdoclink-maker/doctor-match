@@ -97,6 +97,8 @@ export default function JobDetailPage() {
   const [activeDoctorId, setActiveDoctorId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [anonymous, setAnonymous] = useState(false);
+  const [shareDocuments, setShareDocuments] = useState(false);
+  const [sharedDocuments, setSharedDocuments] = useState([]);
   const [text, setText] = useState("");
   const [file, setFile] = useState(null);
   const [sending, setSending] = useState(false);
@@ -164,6 +166,8 @@ export default function JobDetailPage() {
     const data = await res.json();
     setMessages(data.messages || []);
     setAnonymous(!!data.anonymous);
+    setShareDocuments(!!data.shareDocuments);
+    setSharedDocuments(data.documents || []);
   }
 
   async function handleSend(e) {
@@ -174,7 +178,10 @@ export default function JobDetailPage() {
 
     const form = new FormData();
     form.append("text", text.trim());
-    if (session.role === "doctor") form.append("anonymous", String(anonymous));
+    if (session.role === "doctor") {
+      form.append("anonymous", String(anonymous));
+      form.append("shareDocuments", String(shareDocuments));
+    }
     if (session.role === "hospital") form.append("doctorId", String(activeDoctorId));
     if (file) form.append("file", file);
 
@@ -376,12 +383,36 @@ export default function JobDetailPage() {
                     {conversations.map((c) => (
                       <option key={c.doctorUserId} value={c.doctorUserId}>
                         {c.displayName}
-                        {c.specialty ? `（${c.specialty}）` : ""}
+                        {c.specialty ? `　🏅${c.specialty}` : ""}
                         {c.lastAt ? ` ・ ${formatShortTime(c.lastAt)}` : ""}
                       </option>
                     ))}
                   </select>
                 </label>
+
+                {(() => {
+                  const activeSpecialty = conversations.find((c) => c.doctorUserId === activeDoctorId)?.specialty;
+                  return (
+                    activeSpecialty && (
+                      <div
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 4,
+                          marginTop: 8,
+                          fontSize: 12,
+                          fontWeight: 700,
+                          color: "#8a5a00",
+                          background: "#fff3cd",
+                          borderRadius: 999,
+                          padding: "3px 10px",
+                        }}
+                      >
+                        🏅 専門医：{activeSpecialty}
+                      </div>
+                    )
+                  );
+                })()}
 
                 {!showInvite ? (
                   <button
@@ -432,6 +463,29 @@ export default function JobDetailPage() {
                       </button>
                     </div>
                   </form>
+                )}
+              </div>
+            )}
+
+            {isOwnerHospital && activeDoctorId && (
+              <div style={{ marginBottom: 12, background: "#f9fafb", borderRadius: 8, padding: 12 }}>
+                <h3 style={{ fontSize: 13, margin: "0 0 6px", color: "#0d1b33" }}>提出書類</h3>
+                {sharedDocuments.length > 0 ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    {sharedDocuments.map((d) => (
+                      <a
+                        key={d.id}
+                        href={`/api/uploads/${d.stored_name}`}
+                        style={{ fontSize: 12, color: "#1a56db", fontWeight: 700 }}
+                      >
+                        📎 {d.type === "resume" ? "履歴書" : "医師免許"}：{d.original_name}
+                      </a>
+                    ))}
+                  </div>
+                ) : (
+                  <p style={{ fontSize: 12, color: "#6b7280", margin: 0 }}>
+                    この医師はまだ書類を共有していません。
+                  </p>
                 )}
               </div>
             )}
@@ -514,10 +568,16 @@ export default function JobDetailPage() {
                 </div>
 
                 {isDoctor && (
-                  <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#4b5563", marginBottom: 8 }}>
-                    <input type="checkbox" checked={anonymous} onChange={(e) => setAnonymous(e.target.checked)} />
-                    匿名で連絡する（病院には「匿名の医師」として表示されます）
-                  </label>
+                  <>
+                    <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#4b5563", marginBottom: 8 }}>
+                      <input type="checkbox" checked={anonymous} onChange={(e) => setAnonymous(e.target.checked)} />
+                      匿名で連絡する（病院には「匿名の医師」として表示されます）
+                    </label>
+                    <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#4b5563", marginBottom: 8 }}>
+                      <input type="checkbox" checked={shareDocuments} onChange={(e) => setShareDocuments(e.target.checked)} />
+                      履歴書・医師免許をこの病院に共有する（オフのままだと病院には表示されません）
+                    </label>
+                  </>
                 )}
 
                 {uploadError && <div className="error-box">{uploadError}</div>}
@@ -560,6 +620,34 @@ export default function JobDetailPage() {
             <p className="fee-note">
               採否・条件交渉は病院・医師間で直接行ってください（運営が仲介・あっせんすることはありません）。不正利用防止のため運営が内容を確認する場合があります。
             </p>
+
+            <details style={{ marginTop: 12, background: "#f9fafb", borderRadius: 8, padding: "10px 12px" }}>
+              <summary style={{ fontSize: 12, fontWeight: 700, color: "#4b5563", cursor: "pointer" }}>
+                やりとり例を見る
+              </summary>
+
+              <p style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", margin: "12px 0 6px" }}>やりとり例①</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <div className="msg msg-doctor">救急対応はどの程度の頻度でしょうか？バックアップ体制も教えてください。</div>
+                <div className="msg msg-hospital">救急車は1晩数台程度です。急変時は当直看護師に加え、オンコールの内科医師にも相談できる体制です。</div>
+                <div className="msg msg-doctor">承知しました。この日程で応募したいです。</div>
+                <div className="msg msg-hospital">
+                  ありがとうございます！よろしくお願いします。当日は9時に医局までお越しください。詳細は前日までにメッセージでご連絡します。
+                </div>
+              </div>
+
+              <p style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", margin: "16px 0 6px" }}>やりとり例②（書類の添付）</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <div className="msg msg-doctor">当直室の様子も見せていただけますか？</div>
+                <div className="msg msg-hospital">
+                  こちらが当直室の写真です。
+                  <div style={{ marginTop: 6 }}>
+                    <span style={{ textDecoration: "underline", fontSize: 12 }}>📎 当直室.pdf</span>
+                  </div>
+                </div>
+                <div className="msg msg-doctor">ありがとうございます、イメージが湧きました。</div>
+              </div>
+            </details>
           </div>
         </div>
       </main>
