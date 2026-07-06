@@ -265,6 +265,7 @@ export default function JobsPage() {
                   <span className="tag tag-type">{job.type}</span>
                   <span className="tag tag-area">{job.area}</span>
                   {!!job.hired && <span className="tag tag-hired">成約済み</span>}
+                  {!!job.closed && <span className="tag tag-hired">非公開</span>}
                   {session?.role === "doctor" && matchesAlert(job) && (
                     <span className="tag tag-alert">🔔 条件に一致</span>
                   )}

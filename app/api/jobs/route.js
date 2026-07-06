@@ -15,7 +15,9 @@ export async function GET() {
     return NextResponse.json({ jobs });
   }
 
-  const jobs = db.prepare("SELECT * FROM jobs ORDER BY created_at DESC").all();
+  // Withdrawn postings stay in the hospital's own view (above) but drop out
+  // of the public/doctor-facing listing.
+  const jobs = db.prepare("SELECT * FROM jobs WHERE closed = 0 ORDER BY created_at DESC").all();
   return NextResponse.json({ jobs });
 }
 

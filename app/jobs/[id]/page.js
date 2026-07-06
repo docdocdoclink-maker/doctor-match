@@ -120,6 +120,7 @@ export default function JobDetailPage() {
   const [inviteSending, setInviteSending] = useState(false);
   const [inviteSent, setInviteSent] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [closing, setClosing] = useState(false);
   const threadRef = useRef(null);
   const fileInputRef = useRef(null);
 
@@ -227,6 +228,17 @@ export default function JobDetailPage() {
     setConfirming(false);
   }
 
+  async function handleToggleClosed() {
+    setClosing(true);
+    const res = await fetch(`/api/jobs/${id}/close`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ closed: !job.closed }),
+    });
+    if (res.ok) await loadJob();
+    setClosing(false);
+  }
+
   async function handleInvite(e) {
     e.preventDefault();
     setInviteError("");
@@ -294,25 +306,42 @@ export default function JobDetailPage() {
             <div className="job-card-top">
               <span className="tag tag-type">{job.type}</span>
               <span className="tag tag-area">{job.area}</span>
+              {!!job.closed && <span className="tag tag-hired">非公開</span>}
             </div>
             <h1 style={{ fontSize: 20, margin: "6px 0" }}>{job.title}</h1>
             <div style={{ color: "#4b5563", marginBottom: 4, fontSize: 14 }}>{job.hospital_name}</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
               <span style={{ fontSize: 12, color: "#9ca3af" }}>
                 最終確認日: {formatDateOnly(job.confirmed_at || job.created_at)}
               </span>
               {isOwnerHospital && (
-                <button
-                  type="button"
-                  className="btn-outline"
-                  style={{ fontSize: 11, padding: "3px 10px" }}
-                  disabled={confirming}
-                  onClick={handleConfirm}
-                >
-                  {confirming ? "更新中..." : "本日時点で最新（確認日を更新）"}
-                </button>
+                <>
+                  <button
+                    type="button"
+                    className="btn-outline"
+                    style={{ fontSize: 11, padding: "3px 10px" }}
+                    disabled={confirming}
+                    onClick={handleConfirm}
+                  >
+                    {confirming ? "更新中..." : "本日時点で最新（確認日を更新）"}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-outline"
+                    style={{ fontSize: 11, padding: "3px 10px" }}
+                    disabled={closing}
+                    onClick={handleToggleClosed}
+                  >
+                    {closing ? "処理中..." : job.closed ? "求人を再掲載する" : "求人を取り下げる"}
+                  </button>
+                </>
               )}
             </div>
+            {isOwnerHospital && !!job.closed && (
+              <p className="fee-note" style={{ marginTop: -8, marginBottom: 16 }}>
+                現在非公開です。医師の一覧には表示されません（この求人ページ自体は貴院からのみ引き続き閲覧できます）。
+              </p>
+            )}
 
             <table className="detail-table">
               <tbody>
