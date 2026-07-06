@@ -117,26 +117,33 @@ function DisputeReport({ jobId, doctorUserId }) {
   }
 
   if (sent) {
-    return <p className="fee-note">✓ 運営への相談を申請しました。内容を確認のうえご連絡します。</p>;
+    return (
+      <p className="fee-note">
+        ✓ このやり取りの記録を運営が確認できる状態にしました。運営が仲介・解決を行うものではありません。当事者間での解決が難しい場合は、法テラス等の外部相談窓口のご利用もご検討ください。
+      </p>
+    );
   }
 
   if (!open) {
     return (
       <button type="button" className="btn-outline" style={{ fontSize: 11, padding: "3px 10px" }} onClick={() => setOpen(true)}>
-        🚩 やり取りに問題がある場合は運営に相談する
+        🚩 やり取りの記録を運営が確認できるようにする
       </button>
     );
   }
 
   return (
     <form onSubmit={handleSubmit} style={{ background: "#f9fafb", borderRadius: 8, padding: 12 }}>
+      <p style={{ fontSize: 11, color: "#6b7280", margin: "0 0 8px" }}>
+        これは記録を運営が確認できるようにするための手続きです。運営が交渉や解決を代行するものではありません。
+      </p>
       <label className="field" style={{ marginBottom: 8 }}>
-        相談内容（任意）
+        記録開示が必要な理由（任意）
         <textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="例）成約したのに手数料の連絡がありません" />
       </label>
       <div style={{ display: "flex", gap: 8 }}>
         <button type="submit" className="btn-primary" disabled={sending}>
-          {sending ? "送信中..." : "運営に相談を申請する"}
+          {sending ? "送信中..." : "記録を開示する"}
         </button>
         <button type="button" className="btn-outline" onClick={() => setOpen(false)}>
           閉じる
@@ -800,7 +807,7 @@ export default function JobDetailPage() {
               </p>
             )}
             <p className="fee-note">
-              採否・条件交渉は病院・医師間で直接行ってください（運営が仲介・あっせんすることはありません）。運営はやり取りの内容を通常閲覧しません。手数料の支払いに関する紛争、その他トラブルが生じた場合に限り、ご自身で下記から相談を申請いただくことで、運営が内容を確認できるようになります。
+              採否・条件交渉は病院・医師間で直接行ってください。運営が仲介・あっせん・調停を行うことはなく、トラブルの解決も原則として当事者間で行っていただきます。運営はやり取りの内容を通常閲覧しません。下記から記録を開示いただくことで、運営が内容を確認できるようになりますが、これは記録の確認のみを目的とするものです。
             </p>
 
             {session?.loggedIn && (isDoctor || activeDoctorId) && <DisputeReport jobId={id} doctorUserId={isDoctor ? session.userId : activeDoctorId} />}

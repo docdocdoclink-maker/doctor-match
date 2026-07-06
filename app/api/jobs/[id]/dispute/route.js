@@ -2,10 +2,12 @@ import { NextResponse } from "next/server";
 import db from "@/lib/db";
 import { getSession } from "@/lib/session";
 
-// Either party to a specific conversation can flag it for operator review.
-// This is the ONLY way a conversation becomes visible to the admin panel —
-// see app/api/admin/conversations*. Without a flag, nobody at DocLink can
-// see who's talking to whom, what was said, or who was hired.
+// Either party to a specific conversation can disclose its record to the
+// operator. This is the ONLY way a conversation becomes visible to the admin
+// panel — see app/api/admin/conversations*. Without this, nobody at DocLink
+// can see who's talking to whom, what was said, or who was hired. Disclosing
+// a record only grants the operator visibility for their own reference; it
+// does not obligate DocLink to mediate or resolve anything (see Terms §5, §7).
 export async function POST(request, { params }) {
   const { id } = await params;
   const session = await getSession();
@@ -46,7 +48,7 @@ export async function POST(request, { params }) {
 
   db.prepare(
     "INSERT INTO messages (job_id, doctor_user_id, sender_user_id, sender_role, text) VALUES (?, ?, ?, 'system', ?)"
-  ).run(id, doctorUserId, session.userId, "このやり取りについて、運営への相談が申請されました。運営者が内容を確認できるようになります。");
+  ).run(id, doctorUserId, session.userId, "このやり取りの記録が運営に開示されました（運営が仲介・解決を行うものではありません）。");
 
   return NextResponse.json({ ok: true });
 }
