@@ -40,8 +40,8 @@ export async function POST(request) {
 
   const info = db
     .prepare(
-      `INSERT INTO jobs (hospital_user_id, hospital_name, title, type, area, dept, date_text, pay_text, desc, emergency_volume, night_duty_note, backup_note, hospital_website, access)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO jobs (hospital_user_id, hospital_name, title, type, area, dept, date_text, pay_text, desc, emergency_volume, night_duty_note, backup_note, hospital_website, access, confirmed_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`
     )
     .run(
       session.userId,

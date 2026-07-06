@@ -4,6 +4,15 @@ import Link from "next/link";
 import Topbar from "../components/Topbar";
 import WelcomeModal from "../components/WelcomeModal";
 
+function formatDateOnly(sqliteText) {
+  if (!sqliteText) return "";
+  return new Date(sqliteText.replace(" ", "T") + "Z").toLocaleDateString("ja-JP", {
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+  });
+}
+
 export default function JobsPage() {
   const [session, setSession] = useState(null);
   const [jobs, setJobs] = useState(null);
@@ -103,9 +112,6 @@ export default function JobsPage() {
             {session?.loggedIn && session.role === "doctor" && (
               <div
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
                   background: jobSeeking ? "#eef4ff" : "#f3f4f6",
                   border: `1px solid ${jobSeeking ? "#c7dcff" : "#e5e7eb"}`,
                   borderRadius: 8,
@@ -114,18 +120,23 @@ export default function JobsPage() {
                   marginBottom: 16,
                 }}
               >
-                <span style={{ color: jobSeeking ? "#1a56db" : "#6b7280", fontWeight: 700 }}>
-                  {jobSeeking ? "🟢 今は転職・アルバイト探し中" : "⚪ 今は募集のお声がけを受け付けていません"}
-                </span>
-                <button
-                  type="button"
-                  className="btn-outline"
-                  style={{ fontSize: 12, padding: "4px 10px" }}
-                  onClick={toggleJobSeeking}
-                  disabled={jobSeekingBusy}
-                >
-                  {jobSeekingBusy ? "更新中..." : jobSeeking ? "受け付けを止める" : "受け付けを再開する"}
-                </button>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ color: jobSeeking ? "#1a56db" : "#6b7280", fontWeight: 700 }}>
+                    {jobSeeking ? "🟢 今は転職・アルバイト探し中" : "⚪ 今は募集のお声がけを受け付けていません"}
+                  </span>
+                  <button
+                    type="button"
+                    className="btn-outline"
+                    style={{ fontSize: 12, padding: "4px 10px" }}
+                    onClick={toggleJobSeeking}
+                    disabled={jobSeekingBusy}
+                  >
+                    {jobSeekingBusy ? "更新中..." : jobSeeking ? "受け付けを止める" : "受け付けを再開する"}
+                  </button>
+                </div>
+                <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>
+                  オフの間は病院から新規にメッセージを送られなくなります。ご自身から病院へメッセージを送るのは、オン・オフに関わらずいつでも可能です。
+                </div>
               </div>
             )}
           </>
@@ -263,6 +274,9 @@ export default function JobsPage() {
                 <div className="job-meta">
                   <span>{job.date_text}</span>
                   <span className="job-pay">{job.pay_text}</span>
+                </div>
+                <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>
+                  最終確認日: {formatDateOnly(job.confirmed_at || job.created_at)}
                 </div>
               </Link>
             ))}

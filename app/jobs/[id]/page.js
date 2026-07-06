@@ -16,6 +16,15 @@ function formatDateTime(sqliteText) {
   });
 }
 
+function formatDateOnly(sqliteText) {
+  if (!sqliteText) return "";
+  return new Date(sqliteText.replace(" ", "T") + "Z").toLocaleDateString("ja-JP", {
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+  });
+}
+
 function formatShortTime(sqliteText) {
   return new Date(sqliteText.replace(" ", "T") + "Z").toLocaleString("ja-JP", {
     month: "numeric",
@@ -110,6 +119,7 @@ export default function JobDetailPage() {
   const [inviteError, setInviteError] = useState("");
   const [inviteSending, setInviteSending] = useState(false);
   const [inviteSent, setInviteSent] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const threadRef = useRef(null);
   const fileInputRef = useRef(null);
 
@@ -210,6 +220,13 @@ export default function JobDetailPage() {
     setHiring(false);
   }
 
+  async function handleConfirm() {
+    setConfirming(true);
+    const res = await fetch(`/api/jobs/${id}/confirm`, { method: "POST" });
+    if (res.ok) await loadJob();
+    setConfirming(false);
+  }
+
   async function handleInvite(e) {
     e.preventDefault();
     setInviteError("");
@@ -279,7 +296,23 @@ export default function JobDetailPage() {
               <span className="tag tag-area">{job.area}</span>
             </div>
             <h1 style={{ fontSize: 20, margin: "6px 0" }}>{job.title}</h1>
-            <div style={{ color: "#4b5563", marginBottom: 16, fontSize: 14 }}>{job.hospital_name}</div>
+            <div style={{ color: "#4b5563", marginBottom: 4, fontSize: 14 }}>{job.hospital_name}</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+              <span style={{ fontSize: 12, color: "#9ca3af" }}>
+                最終確認日: {formatDateOnly(job.confirmed_at || job.created_at)}
+              </span>
+              {isOwnerHospital && (
+                <button
+                  type="button"
+                  className="btn-outline"
+                  style={{ fontSize: 11, padding: "3px 10px" }}
+                  disabled={confirming}
+                  onClick={handleConfirm}
+                >
+                  {confirming ? "更新中..." : "本日時点で最新（確認日を更新）"}
+                </button>
+              )}
+            </div>
 
             <table className="detail-table">
               <tbody>

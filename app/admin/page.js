@@ -20,8 +20,11 @@ const STATUS_LABEL = {
 
 export default function AdminPage() {
   const [authed, setAuthed] = useState(false);
+  const [step, setStep] = useState("password");
   const [password, setPassword] = useState("");
+  const [otp, setOtp] = useState("");
   const [loginError, setLoginError] = useState("");
+  const [otpBusy, setOtpBusy] = useState(false);
   const [tab, setTab] = useState("pending");
 
   useEffect(() => {
@@ -36,13 +39,65 @@ export default function AdminPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ password }),
     });
+    const data = await res.json();
     if (!res.ok) {
-      const data = await res.json();
       setLoginError(data.error || "ログインに失敗しました");
       return;
     }
     setPassword("");
+    if (data.otpRequired) {
+      setStep("otp");
+    } else {
+      setAuthed(true);
+    }
+  }
+
+  async function handleVerifyOtp(e) {
+    e.preventDefault();
+    setLoginError("");
+    setOtpBusy(true);
+    const res = await fetch("/api/admin/verify-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: otp }),
+    });
+    const data = await res.json();
+    setOtpBusy(false);
+    if (!res.ok) {
+      setLoginError(data.error || "確認に失敗しました");
+      return;
+    }
+    setOtp("");
     setAuthed(true);
+  }
+
+  if (!authed && step === "otp") {
+    return (
+      <div className="wrap-narrow">
+        <h1 style={{ fontSize: 18, textAlign: "center", marginBottom: 24 }}>DocLink 管理画面</h1>
+        <div className="card">
+          <p className="fee-note" style={{ marginTop: 0 }}>
+            運営者のメールアドレスに6桁の確認コードを送信しました。10分以内に入力してください。
+          </p>
+          {loginError && <div className="error-box">{loginError}</div>}
+          <form onSubmit={handleVerifyOtp}>
+            <label className="field">
+              確認コード
+              <input
+                value={otp}
+                onChange={(e) => setOtp(e.target.value)}
+                inputMode="numeric"
+                maxLength={6}
+                required
+              />
+            </label>
+            <button type="submit" className="btn-primary" style={{ width: "100%" }} disabled={otpBusy}>
+              {otpBusy ? "確認中..." : "確認する"}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
   }
 
   if (!authed) {
