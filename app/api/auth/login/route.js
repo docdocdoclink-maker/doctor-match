@@ -19,6 +19,12 @@ export async function POST(request) {
   if (!user || !bcrypt.compareSync(password, user.password_hash)) {
     return NextResponse.json({ error: "メールアドレスまたはパスワードが違います" }, { status: 401 });
   }
+  if (user.deleted_at) {
+    return NextResponse.json(
+      { error: "このアカウントは無効化されています。心当たりがない場合はお問い合わせフォームよりご連絡ください。" },
+      { status: 403 }
+    );
+  }
 
   const session = await getSession();
   session.userId = user.id;

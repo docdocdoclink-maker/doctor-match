@@ -291,8 +291,11 @@ function PendingTab() {
 function UsersTab() {
   const [users, setUsers] = useState(null);
   const [roleFilter, setRoleFilter] = useState("");
+  const [showDeleted, setShowDeleted] = useState(false);
   const [cleaning, setCleaning] = useState(false);
   const [cleanupMessage, setCleanupMessage] = useState("");
+  const [busyId, setBusyId] = useState(null);
+  const [showCreate, setShowCreate] = useState(false);
 
   useEffect(() => {
     loadUsers();
@@ -304,7 +307,9 @@ function UsersTab() {
       .then((data) => setUsers(data.users));
   }
 
-  const filtered = (users || []).filter((u) => !roleFilter || u.role === roleFilter);
+  const filtered = (users || []).filter(
+    (u) => (!roleFilter || u.role === roleFilter) && (showDeleted || !u.deletedAt)
+  );
   const hasDemoHospital = (users || []).some((u) => u.email === "demo-hospital@example.com");
 
   async function handleCleanupDemo() {
@@ -316,6 +321,21 @@ function UsersTab() {
     setCleanupMessage(data.message || "");
     setCleaning(false);
     loadUsers();
+  }
+
+  async function handleDelete(u) {
+    if (!window.confirm(`${u.displayName}（${u.email}）を削除します。よろしいですか？（後から復元できます）`)) return;
+    setBusyId(u.id);
+    await fetch(`/api/admin/users/${u.id}/delete`, { method: "POST" });
+    await loadUsers();
+    setBusyId(null);
+  }
+
+  async function handleRestore(u) {
+    setBusyId(u.id);
+    await fetch(`/api/admin/users/${u.id}/restore`, { method: "POST" });
+    await loadUsers();
+    setBusyId(null);
   }
 
   return (
@@ -332,12 +352,32 @@ function UsersTab() {
         </div>
       )}
 
-      <div style={{ marginBottom: 14 }}>
+      <div className="card" style={{ marginBottom: 14, padding: 14 }}>
+        {!showCreate ? (
+          <button className="btn-outline" onClick={() => setShowCreate(true)}>
+            ＋ アカウントを手動作成する
+          </button>
+        ) : (
+          <CreateUserForm
+            onDone={() => {
+              setShowCreate(false);
+              loadUsers();
+            }}
+            onCancel={() => setShowCreate(false)}
+          />
+        )}
+      </div>
+
+      <div style={{ display: "flex", gap: 14, alignItems: "center", marginBottom: 14, flexWrap: "wrap" }}>
         <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
           <option value="">すべて</option>
           <option value="doctor">医師のみ</option>
           <option value="hospital">病院のみ</option>
         </select>
+        <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#4b5563" }}>
+          <input type="checkbox" checked={showDeleted} onChange={(e) => setShowDeleted(e.target.checked)} />
+          削除済みアカウントも表示
+        </label>
       </div>
 
       {users === null ? (
@@ -347,51 +387,143 @@ function UsersTab() {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {filtered.map((u) => (
-            <div key={u.id} className="card" style={{ padding: 14 }}>
+            <div key={u.id} className="card" style={{ padding: 14, opacity: u.deletedAt ? 0.6 : 1 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
                 <div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                     <span className="tag tag-type">{u.role === "doctor" ? "🩺 医師" : "🏥 病院"}</span>
                     <span style={{ fontWeight: 700, fontSize: 15 }}>{u.displayName}</span>
-                    <span
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 700,
-                        padding: "2px 8px",
-                        borderRadius: 999,
-                        color: u.verificationStatus === "approved" ? "#0a7d3c" : u.verificationStatus === "rejected" ? "#c0392b" : "#7a5b00",
-                        background: u.verificationStatus === "approved" ? "#e7f7ee" : u.verificationStatus === "rejected" ? "#fdeceb" : "#fff8e6",
-                      }}
-                    >
-                      {STATUS_LABEL[u.verificationStatus] || u.verificationStatus}
-                    </span>
+                    {u.deletedAt ? (
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 700,
+                          padding: "2px 8px",
+                          borderRadius: 999,
+                          color: "#c0392b",
+                          background: "#fdeceb",
+                        }}
+                      >
+                        削除済み（{formatDateTime(u.deletedAt)}）
+                      </span>
+                    ) : (
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 700,
+                          padding: "2px 8px",
+                          borderRadius: 999,
+                          color: u.verificationStatus === "approved" ? "#0a7d3c" : u.verificationStatus === "rejected" ? "#c0392b" : "#7a5b00",
+                          background: u.verificationStatus === "approved" ? "#e7f7ee" : u.verificationStatus === "rejected" ? "#fdeceb" : "#fff8e6",
+                        }}
+                      >
+                        {STATUS_LABEL[u.verificationStatus] || u.verificationStatus}
+                      </span>
+                    )}
                   </div>
                   <div style={{ fontSize: 13, color: "#6b7280" }}>{u.email}</div>
                   {u.phone && <div style={{ fontSize: 13, color: "#6b7280" }}>電話番号: {u.phone}</div>}
                   {u.specialty && <div style={{ fontSize: 12, color: "#6b7280" }}>専門医資格: {u.specialty}</div>}
                   <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 2 }}>登録日時: {formatDateTime(u.createdAt)}</div>
                 </div>
-                {u.role === "doctor" && u.documents.length > 0 && (
-                  <div style={{ display: "flex", gap: 10 }}>
-                    {u.documents.map((d) => (
-                      <a
-                        key={d.id}
-                        href={`/api/uploads/${d.stored_name}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        style={{ color: "#1a56db", fontWeight: 700, fontSize: 12 }}
-                      >
-                        📎 {d.type === "resume" ? "履歴書" : "医師免許証"}
-                      </a>
-                    ))}
-                  </div>
-                )}
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  {u.role === "doctor" && u.documents.length > 0 && (
+                    <div style={{ display: "flex", gap: 10 }}>
+                      {u.documents.map((d) => (
+                        <a
+                          key={d.id}
+                          href={`/api/uploads/${d.stored_name}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{ color: "#1a56db", fontWeight: 700, fontSize: 12 }}
+                        >
+                          📎 {d.type === "resume" ? "履歴書" : "医師免許証"}
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                  {u.deletedAt ? (
+                    <button className="btn-outline" style={{ fontSize: 12 }} disabled={busyId === u.id} onClick={() => handleRestore(u)}>
+                      {busyId === u.id ? "処理中..." : "復元する"}
+                    </button>
+                  ) : (
+                    <button className="btn-outline" style={{ fontSize: 12 }} disabled={busyId === u.id} onClick={() => handleDelete(u)}>
+                      {busyId === u.id ? "処理中..." : "削除する"}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           ))}
         </div>
       )}
     </>
+  );
+}
+
+function CreateUserForm({ onDone, onCancel }) {
+  const [role, setRole] = useState("doctor");
+  const [displayName, setDisplayName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setError("");
+    setSubmitting(true);
+    const res = await fetch("/api/admin/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ role, displayName, email, phone }),
+    });
+    const data = await res.json();
+    setSubmitting(false);
+    if (!res.ok) {
+      setError(data.error || "作成に失敗しました");
+      return;
+    }
+    onDone();
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <p className="fee-note" style={{ marginTop: 0 }}>
+        承認済みの状態で作成され、パスワード設定用のリンクが本人にメールで送信されます。
+      </p>
+      {error && <div className="error-box">{error}</div>}
+      <div className="role-toggle" style={{ marginBottom: 12 }}>
+        <button type="button" className={role === "doctor" ? "active" : ""} onClick={() => setRole("doctor")}>
+          🩺 医師
+        </button>
+        <button type="button" className={role === "hospital" ? "active" : ""} onClick={() => setRole("hospital")}>
+          🏥 病院
+        </button>
+      </div>
+      <label className="field">
+        {role === "hospital" ? "病院名" : "お名前"}
+        <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} required />
+      </label>
+      <label className="field">
+        メールアドレス
+        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+      </label>
+      {role === "hospital" && (
+        <label className="field">
+          電話番号
+          <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
+        </label>
+      )}
+      <div style={{ display: "flex", gap: 8 }}>
+        <button type="submit" className="btn-primary" disabled={submitting}>
+          {submitting ? "作成中..." : "作成する"}
+        </button>
+        <button type="button" className="btn-outline" onClick={onCancel}>
+          キャンセル
+        </button>
+      </div>
+    </form>
   );
 }
 
