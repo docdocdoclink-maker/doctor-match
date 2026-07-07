@@ -77,6 +77,11 @@ function LoginForm() {
         </form>
 
         <p className="fee-note" style={{ marginTop: 14, textAlign: "center" }}>
+          <Link href="/forgot-password" style={{ color: "#1a56db", fontWeight: 700 }}>
+            パスワードをお忘れですか？
+          </Link>
+        </p>
+        <p className="fee-note" style={{ marginTop: 4, textAlign: "center" }}>
           アカウントをお持ちでない方は{" "}
           <Link href="/signup" style={{ color: "#1a56db", fontWeight: 700 }}>
             会員登録
