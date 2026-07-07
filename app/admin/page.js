@@ -140,6 +140,7 @@ export default function AdminPage() {
         {[
           { key: "pending", label: "審査待ち" },
           { key: "users", label: "全登録者" },
+          { key: "jobs", label: "求人一覧" },
           { key: "chats", label: "チャット一覧" },
         ].map((t) => (
           <button
@@ -163,6 +164,7 @@ export default function AdminPage() {
 
       {tab === "pending" && <PendingTab />}
       {tab === "users" && <UsersTab />}
+      {tab === "jobs" && <JobsTab />}
       {tab === "chats" && <ChatsTab />}
     </main>
   );
@@ -524,6 +526,101 @@ function CreateUserForm({ onDone, onCancel }) {
         </button>
       </div>
     </form>
+  );
+}
+
+function JobsTab() {
+  const [jobs, setJobs] = useState(null);
+  const [statusFilter, setStatusFilter] = useState("");
+  const [busyId, setBusyId] = useState(null);
+
+  useEffect(() => {
+    loadJobs();
+  }, []);
+
+  function loadJobs() {
+    fetch("/api/admin/jobs")
+      .then((r) => r.json())
+      .then((data) => setJobs(data.jobs));
+  }
+
+  const filtered = (jobs || []).filter((j) => {
+    if (statusFilter === "open") return !j.closed;
+    if (statusFilter === "closed") return j.closed;
+    if (statusFilter === "hired") return j.hired;
+    return true;
+  });
+
+  async function handleToggleClosed(job) {
+    if (!job.closed && !window.confirm(`「${job.title}」（${job.hospitalName}）を非公開にします。よろしいですか？`)) return;
+    setBusyId(job.id);
+    await fetch(`/api/jobs/${job.id}/close`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ closed: !job.closed }),
+    });
+    await loadJobs();
+    setBusyId(null);
+  }
+
+  return (
+    <>
+      <p className="fee-note" style={{ marginTop: 0 }}>
+        病院と連絡が取れない等の事情で、運営側から求人を非公開にできます。病院アカウント自体はそのまま残ります。
+      </p>
+      <div style={{ marginBottom: 14 }}>
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <option value="">すべて</option>
+          <option value="open">掲載中のみ</option>
+          <option value="closed">非公開のみ</option>
+          <option value="hired">成約済みのみ</option>
+        </select>
+      </div>
+
+      {jobs === null ? (
+        <div className="loading-state">読み込み中...</div>
+      ) : filtered.length === 0 ? (
+        <div className="empty-state">求人がありません。</div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {filtered.map((j) => (
+            <div key={j.id} className="card" style={{ padding: 14 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
+                    <span className="tag tag-type">{j.type}</span>
+                    <span style={{ fontWeight: 700, fontSize: 15 }}>{j.title}</span>
+                    {j.closed && (
+                      <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 999, color: "#c0392b", background: "#fdeceb" }}>
+                        非公開
+                      </span>
+                    )}
+                    {!!j.hired && (
+                      <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 999, color: "#0a7d3c", background: "#e7f7ee" }}>
+                        成約済み
+                      </span>
+                    )}
+                    {j.hospitalDeleted && (
+                      <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 999, color: "#7a5b00", background: "#fff8e6" }}>
+                        病院アカウント削除済み
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 13, color: "#6b7280" }}>
+                    {j.hospitalName}（{j.area}）
+                  </div>
+                  <div style={{ fontSize: 12, color: "#6b7280" }}>{j.hospitalEmail}{j.hospitalPhone ? ` ・ ${j.hospitalPhone}` : ""}</div>
+                  <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 2 }}>掲載日時: {formatDateTime(j.createdAt)}</div>
+                </div>
+                <button className="btn-outline" style={{ fontSize: 12 }} disabled={busyId === j.id} onClick={() => handleToggleClosed(j)}>
+                  {busyId === j.id ? "処理中..." : j.closed ? "再掲載する" : "非公開にする"}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </>
   );
 }
 

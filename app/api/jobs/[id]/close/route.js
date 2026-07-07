@@ -5,7 +5,7 @@ import { getSession } from "@/lib/session";
 export async function POST(request, { params }) {
   const { id } = await params;
   const session = await getSession();
-  if (!session.userId || session.role !== "hospital") {
+  if (!session.isAdmin && (!session.userId || session.role !== "hospital")) {
     return NextResponse.json({ error: "病院アカウントでログインしてください" }, { status: 403 });
   }
 
@@ -13,7 +13,9 @@ export async function POST(request, { params }) {
   if (!job) {
     return NextResponse.json({ error: "求人が見つかりません" }, { status: 404 });
   }
-  if (job.hospital_user_id !== session.userId) {
+  // Admin can close any listing (e.g. a hospital that's gone unreachable);
+  // a hospital account can only touch its own.
+  if (!session.isAdmin && job.hospital_user_id !== session.userId) {
     return NextResponse.json({ error: "この求人を編集する権限がありません" }, { status: 403 });
   }
 
