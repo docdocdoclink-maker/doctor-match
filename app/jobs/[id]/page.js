@@ -133,6 +133,15 @@ export default function JobDetailPage() {
       .then((r) => r.json())
       .then(setSession);
     loadJob();
+    // Navigating from one job page to another doesn't remount this
+    // component (same route pattern, just a different [id]), so without
+    // this, activeDoctorId/messages from the previous job would otherwise
+    // stick around — for a doctor it's literally the same value
+    // (their own user id) both times, so the effect below wouldn't have
+    // re-run on its own.
+    setActiveDoctorId(null);
+    setMessages([]);
+    setConversations([]);
   }, [id]);
 
   useEffect(() => {
@@ -146,7 +155,7 @@ export default function JobDetailPage() {
 
   useEffect(() => {
     if (activeDoctorId) loadMessages(activeDoctorId);
-  }, [activeDoctorId]);
+  }, [activeDoctorId, id]);
 
   useEffect(() => {
     if (threadRef.current) {
@@ -680,26 +689,32 @@ export default function JobDetailPage() {
                   </div>
                 )}
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
-                  {quickReplies.map((q) => (
-                    <button
-                      key={q.text}
-                      type="button"
-                      onClick={() => setText(q.text)}
-                      style={{
-                        fontSize: 11,
-                        padding: "5px 10px",
-                        borderRadius: 999,
-                        border: q.score > 0 ? "1px solid #1a56db" : "1px solid #d1d5db",
-                        background: q.score > 0 ? "#e9f0ff" : "#f9fafb",
-                        color: q.score > 0 ? "#1a56db" : "#4b5563",
-                        fontWeight: q.score > 0 ? 700 : 400,
-                        cursor: "pointer",
-                      }}
-                    >
-                      {q.score > 0 ? "💡 " : ""}
-                      {q.text}
-                    </button>
-                  ))}
+                  {quickReplies.map((q, idx) => {
+                    const isTopPick = idx === 0 && q.score > 0;
+                    return (
+                      <button
+                        key={q.text}
+                        type="button"
+                        onClick={(e) => {
+                          setText(q.text);
+                          e.currentTarget.blur();
+                        }}
+                        style={{
+                          fontSize: 11,
+                          padding: "5px 10px",
+                          borderRadius: 999,
+                          border: isTopPick ? "1px solid #1a56db" : "1px solid #d1d5db",
+                          background: isTopPick ? "#e9f0ff" : "#f9fafb",
+                          color: isTopPick ? "#1a56db" : "#4b5563",
+                          fontWeight: isTopPick ? 700 : 400,
+                          cursor: "pointer",
+                        }}
+                      >
+                        {isTopPick ? "💡 " : ""}
+                        {q.text}
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {isDoctor && (
