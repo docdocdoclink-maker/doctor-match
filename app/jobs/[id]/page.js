@@ -53,6 +53,8 @@ const HOSPITAL_QUICK_REPLIES = [
   { text: "ご不明な点があればいつでもご連絡ください", keywords: [] },
 ];
 
+const MESSAGE_MAX_LENGTH = 2000;
+
 function rankQuickReplies(templates, lastIncomingText) {
   const text = lastIncomingText || "";
   return [...templates]
@@ -125,6 +127,7 @@ export default function JobDetailPage() {
   const [inviteSent, setInviteSent] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [closing, setClosing] = useState(false);
+  const [composerFocused, setComposerFocused] = useState(false);
   const threadRef = useRef(null);
   const fileInputRef = useRef(null);
 
@@ -733,12 +736,16 @@ export default function JobDetailPage() {
                 {uploadError && <div className="error-box">{uploadError}</div>}
 
                 <form className="chat-form" onSubmit={handleSend} style={{ flexWrap: "wrap" }}>
-                  <input
+                  <textarea
                     value={text}
                     onChange={(e) => setText(e.target.value)}
+                    onFocus={() => setComposerFocused(true)}
+                    onBlur={() => setComposerFocused(false)}
                     placeholder="メッセージを入力..."
                     autoComplete="off"
-                    style={{ flex: 1, minWidth: 140 }}
+                    maxLength={MESSAGE_MAX_LENGTH}
+                    rows={composerFocused || text ? 4 : 1}
+                    style={{ flex: 1, minWidth: 140, resize: "vertical", transition: "all 0.15s ease" }}
                   />
                   <input
                     ref={fileInputRef}
@@ -751,6 +758,9 @@ export default function JobDetailPage() {
                     送信
                   </button>
                 </form>
+                <p className="fee-note" style={{ marginTop: 4, textAlign: "right" }}>
+                  {text.length} / {MESSAGE_MAX_LENGTH}文字
+                </p>
                 {file && <p className="fee-note">添付: {file.name}</p>}
                 <p className="fee-note">
                   {isDoctor

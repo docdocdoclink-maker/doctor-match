@@ -126,6 +126,9 @@ export async function POST(request, { params }) {
   if (!text && !attachment) {
     return NextResponse.json({ error: "メッセージまたはファイルを入力してください" }, { status: 400 });
   }
+  if (text.length > 2000) {
+    return NextResponse.json({ error: "メッセージは2000文字以内で入力してください" }, { status: 400 });
+  }
 
   const job = db.prepare("SELECT * FROM jobs WHERE id = ?").get(id);
   if (!job) {

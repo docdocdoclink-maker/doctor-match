@@ -628,16 +628,26 @@ function ChatsTab() {
   const [conversations, setConversations] = useState(null);
   const [active, setActive] = useState(null);
   const [messages, setMessages] = useState(null);
+  const [search, setSearch] = useState("");
+  const [flaggedOnly, setFlaggedOnly] = useState(false);
+  const [flagReason, setFlagReason] = useState("");
+  const [flagging, setFlagging] = useState(false);
 
   useEffect(() => {
+    loadConversations();
+  }, []);
+
+  function loadConversations() {
     fetch("/api/admin/conversations")
       .then((r) => r.json())
       .then((data) => setConversations(data.conversations));
-  }, []);
+  }
 
   async function openConversation(conv) {
     setActive(conv);
     setMessages(null);
+    setFlagReason("");
+    if (!conv.disputeFlaggedAt) return;
     const url = new URL("/api/admin/conversations/messages", window.location.origin);
     url.searchParams.set("jobId", conv.jobId);
     url.searchParams.set("doctorId", conv.doctorUserId);
@@ -646,19 +656,59 @@ function ChatsTab() {
     setMessages(data.messages);
   }
 
+  async function handleFlag() {
+    setFlagging(true);
+    await fetch("/api/admin/conversations/flag", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jobId: active.jobId, doctorId: active.doctorUserId, reason: flagReason }),
+    });
+    loadConversations();
+    const url = new URL("/api/admin/conversations/messages", window.location.origin);
+    url.searchParams.set("jobId", active.jobId);
+    url.searchParams.set("doctorId", active.doctorUserId);
+    const res = await fetch(url);
+    const data = await res.json();
+    setMessages(data.messages);
+    setActive((a) => ({ ...a, disputeFlaggedAt: new Date().toISOString(), disputeFlaggedBy: "admin", disputeReason: flagReason }));
+    setFlagging(false);
+  }
+
+  const filtered = (conversations || []).filter((c) => {
+    if (flaggedOnly && !c.disputeFlaggedAt) return false;
+    if (!search.trim()) return true;
+    const q = search.trim().toLowerCase();
+    return (
+      c.jobTitle?.toLowerCase().includes(q) ||
+      c.hospitalName?.toLowerCase().includes(q) ||
+      c.doctorName?.toLowerCase().includes(q) ||
+      c.doctorEmail?.toLowerCase().includes(q)
+    );
+  });
+
   return (
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1.4fr", gap: 20, alignItems: "start" }}>
       <div>
         <p className="fee-note" style={{ marginTop: 0 }}>
-          運営はやり取りの内容を通常閲覧しません。ここには、医師または病院から記録の開示を依頼されたやり取りのみが表示されます。閲覧は記録確認のみを目的とし、紛争の仲介・解決は行いません。
+          運営はやり取りの内容を通常閲覧しません。一覧には全ての会話（求人・参加者名など）が表示されますが、内容は「開示する」で開示した会話のみ確認できます。閲覧は記録確認のみを目的とし、紛争の仲介・解決は行いません。
         </p>
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="病院名・医師名・求人名で検索"
+          style={{ width: "100%", marginBottom: 8 }}
+        />
+        <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#4b5563", marginBottom: 12 }}>
+          <input type="checkbox" checked={flaggedOnly} onChange={(e) => setFlaggedOnly(e.target.checked)} />
+          開示済みのみ表示
+        </label>
         {conversations === null ? (
           <div className="loading-state">読み込み中...</div>
-        ) : conversations.length === 0 ? (
-          <div className="empty-state">開示依頼があるやり取りはありません。</div>
+        ) : filtered.length === 0 ? (
+          <div className="empty-state">該当するやり取りはありません。</div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {conversations.map((c) => (
+            {filtered.map((c) => (
               <button
                 key={`${c.jobId}-${c.doctorUserId}`}
                 onClick={() => openConversation(c)}
@@ -672,15 +722,19 @@ function ChatsTab() {
               >
                 <div style={{ fontWeight: 700, fontSize: 14 }}>{c.jobTitle}</div>
                 <div style={{ fontSize: 12, color: "#6b7280" }}>
-                  {c.hospitalName} ⇄ {c.anonymous ? "匿名の医師" : c.doctorName}
+                  {c.hospitalName} ⇄ {c.anonymous ? "匿名の医師" : c.doctorName}（{c.doctorEmail}）
                 </div>
                 <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>
                   {c.messageCount}件 ・ 最終: {formatDateTime(c.lastMessageAt)}
                 </div>
-                <div style={{ fontSize: 11, color: "#c0392b", marginTop: 4 }}>
-                  🚩 {c.disputeFlaggedBy === "doctor" ? "医師" : "病院"}から開示依頼（{formatDateTime(c.disputeFlaggedAt)}）
-                  {c.disputeReason && <div style={{ color: "#7a5b00", marginTop: 2 }}>理由: {c.disputeReason}</div>}
-                </div>
+                {c.disputeFlaggedAt ? (
+                  <div style={{ fontSize: 11, color: "#c0392b", marginTop: 4 }}>
+                    🚩 {c.disputeFlaggedBy === "doctor" ? "医師" : c.disputeFlaggedBy === "hospital" ? "病院" : "運営"}が開示済み（{formatDateTime(c.disputeFlaggedAt)}）
+                    {c.disputeReason && <div style={{ color: "#7a5b00", marginTop: 2 }}>理由: {c.disputeReason}</div>}
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>未開示（内容は非表示）</div>
+                )}
               </button>
             ))}
           </div>
@@ -690,6 +744,22 @@ function ChatsTab() {
       <div className="card" style={{ minHeight: 200 }}>
         {!active ? (
           <div className="empty-state">左の一覧からチャットを選んでください。</div>
+        ) : !active.disputeFlaggedAt ? (
+          <>
+            <h3 style={{ fontSize: 14, margin: "0 0 10px" }}>
+              {active.jobTitle}（{active.hospitalName} ⇄ {active.anonymous ? "匿名の医師" : active.doctorName}）
+            </h3>
+            <p className="fee-note" style={{ marginTop: 0 }}>
+              この会話はまだ開示されていません。お問い合わせ等で確認が必要な場合のみ、理由を記録した上で開示してください。
+            </p>
+            <label className="field">
+              開示する理由
+              <textarea value={flagReason} onChange={(e) => setFlagReason(e.target.value)} placeholder="例）お問い合わせフォームより、成約したのに手数料の連絡がないとの申告" />
+            </label>
+            <button className="btn-primary" disabled={flagging || !flagReason.trim()} onClick={handleFlag}>
+              {flagging ? "処理中..." : "開示する"}
+            </button>
+          </>
         ) : messages === null ? (
           <div className="loading-state">読み込み中...</div>
         ) : (
