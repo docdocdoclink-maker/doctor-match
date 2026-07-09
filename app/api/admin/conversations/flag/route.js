@@ -4,8 +4,9 @@ import { getSession } from "@/lib/session";
 
 // Lets admin flag a conversation for review themselves, for cases where a
 // party reported an issue via Contact (rather than flagging it from inside
-// the conversation). Same effect as app/api/jobs/[id]/dispute, just
-// admin-initiated — content is still never visible until this runs.
+// the conversation). Deliberately silent — no system message is posted to
+// the thread, so neither party is tipped off that the conversation is under
+// review. Content is still never visible until this runs.
 export async function POST(request) {
   const session = await getSession();
   if (!session.isAdmin) {
@@ -25,10 +26,6 @@ export async function POST(request) {
   db.prepare(
     "UPDATE conversations SET dispute_flagged_at = datetime('now'), dispute_flagged_by = 'admin', dispute_reason = ? WHERE job_id = ? AND doctor_user_id = ?"
   ).run(reason || null, jobId, doctorId);
-
-  db.prepare(
-    "INSERT INTO messages (job_id, doctor_user_id, sender_user_id, sender_role, text) VALUES (?, ?, NULL, 'system', ?)"
-  ).run(jobId, doctorId, "お問い合わせいただいた内容をもとに、運営がこのやり取りの記録を確認できる状態にしました。");
 
   return NextResponse.json({ ok: true });
 }

@@ -693,7 +693,8 @@ export default function JobDetailPage() {
                 )}
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
                   {quickReplies.map((q, idx) => {
-                    const isTopPick = idx === 0 && q.score > 0;
+                    const isRecommended = idx === 0 && q.score > 0;
+                    const isSelected = text === q.text;
                     return (
                       <button
                         key={q.text}
@@ -706,14 +707,14 @@ export default function JobDetailPage() {
                           fontSize: 11,
                           padding: "5px 10px",
                           borderRadius: 999,
-                          border: isTopPick ? "1px solid #1a56db" : "1px solid #d1d5db",
-                          background: isTopPick ? "#e9f0ff" : "#f9fafb",
-                          color: isTopPick ? "#1a56db" : "#4b5563",
-                          fontWeight: isTopPick ? 700 : 400,
+                          border: isSelected ? "1px solid #1a56db" : "1px solid #d1d5db",
+                          background: isSelected ? "#e9f0ff" : "#f9fafb",
+                          color: isSelected ? "#1a56db" : "#4b5563",
+                          fontWeight: isSelected ? 700 : 400,
                           cursor: "pointer",
                         }}
                       >
-                        {isTopPick ? "💡 " : ""}
+                        {isRecommended ? "💡 " : ""}
                         {q.text}
                       </button>
                     );
