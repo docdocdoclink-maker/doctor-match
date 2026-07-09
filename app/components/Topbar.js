@@ -3,9 +3,17 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-export default function Topbar({ session }) {
+// jobSeeking/onJobSeekingChange are optional: pages that already track this
+// themselves (like /jobs, which has its own banner for it) pass them down so
+// both controls stay in sync. Pages that don't care just get a self-managed
+// toggle instead.
+export default function Topbar({ session, jobSeeking: jobSeekingProp, onJobSeekingChange }) {
   const router = useRouter();
   const [unread, setUnread] = useState(0);
+  const [localJobSeeking, setLocalJobSeeking] = useState(true);
+  const [jobSeekingBusy, setJobSeekingBusy] = useState(false);
+  const isControlled = jobSeekingProp !== undefined;
+  const jobSeeking = isControlled ? jobSeekingProp : localJobSeeking;
 
   useEffect(() => {
     if (!session?.loggedIn) return;
@@ -15,10 +23,29 @@ export default function Topbar({ session }) {
       .catch(() => {});
   }, [session?.loggedIn]);
 
+  useEffect(() => {
+    if (!isControlled && session?.role === "doctor") setLocalJobSeeking(session.jobSeeking);
+  }, [session?.role, session?.jobSeeking, isControlled]);
+
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
     router.push("/login");
     router.refresh();
+  }
+
+  async function toggleJobSeeking() {
+    setJobSeekingBusy(true);
+    const next = !jobSeeking;
+    const res = await fetch("/api/doctor/job-seeking", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ active: next }),
+    });
+    if (res.ok) {
+      if (isControlled) onJobSeekingChange?.(next);
+      else setLocalJobSeeking(next);
+    }
+    setJobSeekingBusy(false);
   }
 
   return (
@@ -29,6 +56,29 @@ export default function Topbar({ session }) {
         </Link>
         {session?.loggedIn ? (
           <div className="userchip">
+            {session.role === "doctor" && (
+              <button
+                type="button"
+                onClick={toggleJobSeeking}
+                disabled={jobSeekingBusy}
+                title="オフの間は病院から新規にメッセージ（メール通知含む）が届かなくなります。ご自身から送るのはいつでも可能です。"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  border: `1px solid ${jobSeeking ? "#c7dcff" : "#e5e7eb"}`,
+                  background: jobSeeking ? "#eef4ff" : "#f3f4f6",
+                  color: jobSeeking ? "#1a56db" : "#6b7280",
+                  borderRadius: 999,
+                  padding: "6px 12px",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                {jobSeekingBusy ? "更新中..." : jobSeeking ? "🟢 求職中" : "⚪ 停止中"}
+              </button>
+            )}
             <Link href="/inbox" className="btn-outline" style={{ textDecoration: "none", position: "relative" }}>
               💬 メッセージ
               {unread > 0 && (

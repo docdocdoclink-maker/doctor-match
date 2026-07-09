@@ -91,7 +91,7 @@ export default function JobsPage() {
 
   return (
     <>
-      <Topbar session={session} />
+      <Topbar session={session} jobSeeking={jobSeeking} onJobSeekingChange={setJobSeeking} />
       {showWelcome && session?.loggedIn && (
         <WelcomeModal session={session} onDismiss={() => setShowWelcome(false)} />
       )}
@@ -135,7 +135,7 @@ export default function JobsPage() {
                   </button>
                 </div>
                 <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>
-                  オフの間は病院から新規にメッセージを送られなくなります。ご自身から病院へメッセージを送るのは、オン・オフに関わらずいつでも可能です。
+                  オフの間は病院から新規にメッセージ（メール通知含む）が届かなくなります。転職活動が落ち着いたら、通知を止めるのにご活用ください。ご自身から病院へメッセージを送るのは、オン・オフに関わらずいつでも可能です。
                 </div>
               </div>
             )}
