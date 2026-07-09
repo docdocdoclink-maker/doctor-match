@@ -73,7 +73,7 @@ body {
 
 .back-link { background: none; border: none; color: #1a56db; cursor: pointer; font-size: 13px; padding: 0; margin-bottom: 16px; text-decoration: none; display: inline-block; }
 
-.detail-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 24px; }
+.detail-grid { display: grid; grid-template-columns: 1fr 1.6fr; gap: 24px; }
 @media (max-width: 720px) { .detail-grid { grid-template-columns: 1fr; } }
 .detail-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
 .detail-table th { text-align: left; padding: 8px 10px 8px 0; color: #6b7280; font-size: 12px; font-weight: 700; vertical-align: top; width: 90px; }
