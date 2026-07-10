@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Topbar from "../components/Topbar";
 import WelcomeModal from "../components/WelcomeModal";
-import { JOB_TYPES, PREFECTURES } from "../../lib/jobOptions";
+import { JOB_TYPES, PREFECTURES, SHIFT_TYPES, WEEKDAYS, SKILLS } from "../../lib/jobOptions";
 import { ALL_DEPTS } from "../../lib/depts";
 
 function formatDateOnly(sqliteText) {
@@ -254,6 +254,13 @@ function AlertPanel({ areas, types, depts, alert, onSave }) {
   const [type, setType] = useState(alert?.type || "");
   const [dept, setDept] = useState(alert?.dept || "");
   const [note, setNote] = useState(alert?.note || "");
+  const [shiftType, setShiftType] = useState(alert?.shift_type || "");
+  const [weekdays, setWeekdays] = useState(alert?.weekdays || []);
+  const [skills, setSkills] = useState(alert?.skills || []);
+
+  function toggle(list, setList, value) {
+    setList(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
+  }
 
   return (
     <div className="card" style={{ marginBottom: 16 }}>
@@ -294,7 +301,81 @@ function AlertPanel({ areas, types, depts, alert, onSave }) {
             ))}
           </select>
         </label>
+        <label className="field" style={{ marginBottom: 0 }}>
+          勤務形態
+          <select value={shiftType} onChange={(e) => setShiftType(e.target.value)}>
+            <option value="">指定なし</option>
+            {SHIFT_TYPES.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
+
+      <div style={{ marginBottom: 12 }}>
+        <div style={{ fontSize: 12, color: "#374151", marginBottom: 6 }}>希望曜日（任意・複数選択可）</div>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {WEEKDAYS.map((w) => (
+            <label
+              key={w}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+                fontSize: 12,
+                border: `1px solid ${weekdays.includes(w) ? "#1a56db" : "#d1d5db"}`,
+                background: weekdays.includes(w) ? "#e9f0ff" : "#f9fafb",
+                color: weekdays.includes(w) ? "#1a56db" : "#4b5563",
+                borderRadius: 999,
+                padding: "3px 10px",
+                cursor: "pointer",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={weekdays.includes(w)}
+                onChange={() => toggle(weekdays, setWeekdays, w)}
+                style={{ display: "none" }}
+              />
+              {w}
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ marginBottom: 12 }}>
+        <div style={{ fontSize: 12, color: "#374151", marginBottom: 6 }}>対応可能な処置・スキル（任意・複数選択可）</div>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {SKILLS.map((s) => (
+            <label
+              key={s}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+                fontSize: 12,
+                border: `1px solid ${skills.includes(s) ? "#1a56db" : "#d1d5db"}`,
+                background: skills.includes(s) ? "#e9f0ff" : "#f9fafb",
+                color: skills.includes(s) ? "#1a56db" : "#4b5563",
+                borderRadius: 999,
+                padding: "3px 10px",
+                cursor: "pointer",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={skills.includes(s)}
+                onChange={() => toggle(skills, setSkills, s)}
+                style={{ display: "none" }}
+              />
+              {s}
+            </label>
+          ))}
+        </div>
+      </div>
+
       <label className="field">
         希望条件メモ（任意・病院に表示されます）
         <textarea
@@ -303,14 +384,25 @@ function AlertPanel({ areas, types, depts, alert, onSave }) {
           placeholder="例）土日希望、非常勤メインで探しています"
         />
       </label>
-      <div style={{ display: "flex", gap: 8 }}>
-        <button className="btn-primary" onClick={() => onSave({ active: true, area, type, dept, note })}>
+      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+        <button
+          className="btn-primary"
+          onClick={() => onSave({ active: true, area, type, dept, note, shiftType, weekdays, skills })}
+        >
           この条件で通知を受け取る
         </button>
         {!!alert?.active && (
-          <button className="btn-outline" onClick={() => onSave({ active: false, area: "", type: "", dept: "", note })}>
-            アラートを解除
-          </button>
+          <>
+            <button
+              className="btn-outline"
+              onClick={() =>
+                onSave({ active: false, area: "", type: "", dept: "", note: "", shiftType: "", weekdays: [], skills: [] })
+              }
+            >
+              アラートを解除
+            </button>
+            <span style={{ fontSize: 11, color: "#9ca3af" }}>通知が不要になったら、こちらでいつでも止められます。</span>
+          </>
         )}
       </div>
     </div>

@@ -19,6 +19,7 @@ export async function GET(request, { params }) {
   const rows = db
     .prepare(
       `SELECT c.doctor_user_id, c.anonymous, c.hire_confirmed_by_doctor_at, u.display_name, u.specialty,
+              u.desired_employment_type,
               a.area AS desired_area, a.type AS desired_type, a.dept AS desired_dept, a.note AS desired_note,
               (SELECT text FROM messages m WHERE m.job_id = c.job_id AND m.doctor_user_id = c.doctor_user_id ORDER BY m.created_at DESC LIMIT 1) AS last_text,
               (SELECT created_at FROM messages m WHERE m.job_id = c.job_id AND m.doctor_user_id = c.doctor_user_id ORDER BY m.created_at DESC LIMIT 1) AS last_at
@@ -34,6 +35,7 @@ export async function GET(request, { params }) {
     doctorUserId: r.doctor_user_id,
     displayName: r.anonymous ? "匿名の医師" : r.display_name,
     specialty: r.specialty || null,
+    desiredEmploymentType: r.desired_employment_type || null,
     anonymous: !!r.anonymous,
     lastText: r.last_text,
     lastAt: r.last_at,

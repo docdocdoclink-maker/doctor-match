@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import db from "@/lib/db";
 import { getSession } from "@/lib/session";
+import { EMPLOYMENT_PREFERENCES } from "@/lib/jobOptions";
 
 export async function GET() {
   const session = await getSession();
@@ -8,13 +9,14 @@ export async function GET() {
     return NextResponse.json({ error: "ログインしてください" }, { status: 401 });
   }
   const user = db
-    .prepare("SELECT display_name, specialty, license_number, phone FROM users WHERE id = ?")
+    .prepare("SELECT display_name, specialty, license_number, phone, desired_employment_type FROM users WHERE id = ?")
     .get(session.userId);
   return NextResponse.json({
     displayName: user.display_name,
     specialty: user.specialty || "",
     licenseNumber: user.license_number || "",
     phone: user.phone || "",
+    desiredEmploymentType: user.desired_employment_type || "",
   });
 }
 
@@ -33,12 +35,13 @@ export async function PATCH(request) {
   if (session.role === "doctor") {
     const specialty = (body.specialty || "").trim();
     const licenseNumber = (body.licenseNumber || "").trim();
-    db.prepare("UPDATE users SET display_name = ?, specialty = ?, license_number = ? WHERE id = ?").run(
-      displayName,
-      specialty || null,
-      licenseNumber || null,
-      session.userId
-    );
+    const desiredEmploymentType = (body.desiredEmploymentType || "").trim();
+    if (desiredEmploymentType && !EMPLOYMENT_PREFERENCES.includes(desiredEmploymentType)) {
+      return NextResponse.json({ error: "希望する勤務形態が不正です" }, { status: 400 });
+    }
+    db.prepare(
+      "UPDATE users SET display_name = ?, specialty = ?, license_number = ?, desired_employment_type = ? WHERE id = ?"
+    ).run(displayName, specialty || null, licenseNumber || null, desiredEmploymentType || null, session.userId);
   } else {
     const phone = (body.phone || "").trim();
     if (!phone) {

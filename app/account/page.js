@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Topbar from "../components/Topbar";
+import { EMPLOYMENT_PREFERENCES } from "../../lib/jobOptions";
 
 export default function AccountPage() {
   const router = useRouter();
@@ -72,11 +73,25 @@ export default function AccountPage() {
                   <input value={form.licenseNumber} onChange={(e) => update("licenseNumber", e.target.value)} placeholder="例）第000000号" />
                 </label>
                 <label className="field">
-                  専門医資格（任意・病院に表示されます）
-                  <input
+                  希望する勤務形態（任意・病院に表示されます）
+                  <select
+                    value={form.desiredEmploymentType}
+                    onChange={(e) => update("desiredEmploymentType", e.target.value)}
+                  >
+                    <option value="">指定なし</option>
+                    {EMPLOYMENT_PREFERENCES.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="field">
+                  保有資格・専門医（任意・病院に表示されます）
+                  <textarea
                     value={form.specialty}
                     onChange={(e) => update("specialty", e.target.value)}
-                    placeholder="例）日本内科学会 総合内科専門医"
+                    placeholder={"複数ある場合は改行して記載してください\n例）日本内科学会 総合内科専門医\n日本消化器内視鏡学会 専門医"}
                   />
                 </label>
                 <p className="fee-note">
