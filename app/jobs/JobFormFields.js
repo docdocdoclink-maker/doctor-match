@@ -1,4 +1,5 @@
 import { DEPT_CATEGORIES } from "../../lib/depts";
+import { JOB_TYPES, PREFECTURES } from "../../lib/jobOptions";
 import { getFeeForJobType, formatYen, isFreeCampaignActive } from "../../lib/pricing";
 
 // Shared field set for both "post a new job" and "edit an existing job" —
@@ -13,10 +14,11 @@ export default function JobFormFields({ form, update }) {
       <label className="field">
         形態
         <select value={form.type} onChange={(e) => update("type", e.target.value)}>
-          <option value="非常勤">非常勤</option>
-          <option value="当直">当直</option>
-          <option value="日当直">日当直</option>
-          <option value="常勤">常勤</option>
+          {JOB_TYPES.map((t) => (
+            <option key={t} value={t}>
+              {t}
+            </option>
+          ))}
         </select>
         <span className="fee-note" style={{ margin: "4px 0 0" }}>
           {isFreeCampaignActive() ? (
@@ -29,11 +31,11 @@ export default function JobFormFields({ form, update }) {
       <label className="field">
         エリア
         <select value={form.area} onChange={(e) => update("area", e.target.value)}>
-          <option value="東京都">東京都</option>
-          <option value="神奈川県">神奈川県</option>
-          <option value="埼玉県">埼玉県</option>
-          <option value="千葉県">千葉県</option>
-          <option value="茨城県">茨城県</option>
+          {PREFECTURES.map((a) => (
+            <option key={a} value={a}>
+              {a}
+            </option>
+          ))}
         </select>
       </label>
       <label className="field">

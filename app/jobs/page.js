@@ -1,8 +1,10 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Topbar from "../components/Topbar";
 import WelcomeModal from "../components/WelcomeModal";
+import { JOB_TYPES, PREFECTURES } from "../../lib/jobOptions";
+import { ALL_DEPTS } from "../../lib/depts";
 
 function formatDateOnly(sqliteText) {
   if (!sqliteText) return "";
@@ -20,8 +22,6 @@ export default function JobsPage() {
   const [alertPanelOpen, setAlertPanelOpen] = useState(false);
   const [filters, setFilters] = useState({ area: "", type: "", dept: "" });
   const [showWelcome, setShowWelcome] = useState(false);
-  const [jobSeeking, setJobSeeking] = useState(true);
-  const [jobSeekingBusy, setJobSeekingBusy] = useState(false);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -29,7 +29,6 @@ export default function JobsPage() {
       .then((s) => {
         setSession(s);
         if (s.loggedIn && !s.hasSeenIntro) setShowWelcome(true);
-        if (s.role === "doctor") setJobSeeking(s.jobSeeking);
       });
     fetch("/api/jobs")
       .then((r) => r.json())
@@ -44,9 +43,13 @@ export default function JobsPage() {
     }
   }, [session]);
 
-  const areas = useMemo(() => [...new Set((jobs || []).map((j) => j.area))], [jobs]);
-  const types = useMemo(() => [...new Set((jobs || []).map((j) => j.type))], [jobs]);
-  const depts = useMemo(() => [...new Set((jobs || []).map((j) => j.dept))], [jobs]);
+  // Fixed lists, not derived from currently-live postings — otherwise an
+  // area/type with zero postings right now would disappear from both the
+  // search filter and (worse) the alert picker, when an alert's whole point
+  // is to notify about conditions that don't have a match yet.
+  const areas = PREFECTURES;
+  const types = JOB_TYPES;
+  const depts = ALL_DEPTS;
 
   const filtered = (jobs || []).filter(
     (j) =>
@@ -77,21 +80,9 @@ export default function JobsPage() {
 
   const alertMatchCount = jobs ? jobs.filter(matchesAlert).length : 0;
 
-  async function toggleJobSeeking() {
-    setJobSeekingBusy(true);
-    const next = !jobSeeking;
-    const res = await fetch("/api/doctor/job-seeking", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ active: next }),
-    });
-    if (res.ok) setJobSeeking(next);
-    setJobSeekingBusy(false);
-  }
-
   return (
     <>
-      <Topbar session={session} jobSeeking={jobSeeking} onJobSeekingChange={setJobSeeking} />
+      <Topbar session={session} />
       {showWelcome && session?.loggedIn && (
         <WelcomeModal session={session} onDismiss={() => setShowWelcome(false)} />
       )}
@@ -106,39 +97,9 @@ export default function JobsPage() {
         ) : (
           <>
             <h1 style={{ fontSize: 22, margin: "0 0 4px" }}>非常勤・当直バイト求人（関東）</h1>
-            <p style={{ color: "#6b7280", fontSize: 13, margin: "0 0 12px" }}>
+            <p style={{ color: "#6b7280", fontSize: 13, margin: "0 0 20px" }}>
               全ての求人を検索・閲覧できます。応募・連絡は病院と直接やり取りできます。
             </p>
-            {session?.loggedIn && session.role === "doctor" && (
-              <div
-                style={{
-                  background: jobSeeking ? "#eef4ff" : "#f3f4f6",
-                  border: `1px solid ${jobSeeking ? "#c7dcff" : "#e5e7eb"}`,
-                  borderRadius: 8,
-                  padding: "8px 12px",
-                  fontSize: 13,
-                  marginBottom: 16,
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ color: jobSeeking ? "#1a56db" : "#6b7280", fontWeight: 700 }}>
-                    {jobSeeking ? "🟢 今は転職・アルバイト探し中" : "⚪ 今は募集のお声がけを受け付けていません"}
-                  </span>
-                  <button
-                    type="button"
-                    className="btn-outline"
-                    style={{ fontSize: 12, padding: "4px 10px" }}
-                    onClick={toggleJobSeeking}
-                    disabled={jobSeekingBusy}
-                  >
-                    {jobSeekingBusy ? "更新中..." : jobSeeking ? "受け付けを止める" : "受け付けを再開する"}
-                  </button>
-                </div>
-                <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>
-                  オフの間は病院から新規にメッセージ（メール通知含む）が届かなくなります。転職活動が落ち着いたら、通知を止めるのにご活用ください。ご自身から病院へメッセージを送るのは、オン・オフに関わらずいつでも可能です。
-                </div>
-              </div>
-            )}
           </>
         )}
 
@@ -297,7 +258,7 @@ function AlertPanel({ areas, types, depts, alert, onSave }) {
   return (
     <div className="card" style={{ marginBottom: 16 }}>
       <p style={{ fontSize: 12, color: "#6b7280", margin: "0 0 12px" }}>
-        ここで設定した条件は、新着求人の通知に使われるほか、<strong>あなたにメッセージを送る病院にも「希望条件」として表示</strong>されます。
+        <strong>病院から希望に合う条件の求人が新しく掲載されると、通知します。</strong>設定した条件は、あなたにメッセージを送る病院にも「希望条件」として表示されます。
       </p>
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end", marginBottom: 12 }}>
         <label className="field" style={{ marginBottom: 0 }}>
