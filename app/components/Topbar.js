@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import WelcomeModal from "./WelcomeModal";
 
 // jobSeeking/onJobSeekingChange are optional: pages that already track this
 // themselves (like /jobs, which has its own banner for it) pass them down so
@@ -12,6 +13,7 @@ export default function Topbar({ session, jobSeeking: jobSeekingProp, onJobSeeki
   const [unread, setUnread] = useState(0);
   const [localJobSeeking, setLocalJobSeeking] = useState(true);
   const [jobSeekingBusy, setJobSeekingBusy] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const isControlled = jobSeekingProp !== undefined;
   const jobSeeking = isControlled ? jobSeekingProp : localJobSeeking;
 
@@ -103,6 +105,9 @@ export default function Topbar({ session, jobSeeking: jobSeekingProp, onJobSeeki
             <Link href="/account" style={{ color: "inherit", textDecoration: "none" }}>
               {session.displayName} さん
             </Link>
+            <button className="btn-outline" onClick={() => setShowHelp(true)}>
+              ❓ 使い方
+            </button>
             <button className="btn-outline" onClick={handleLogout}>
               ログアウト
             </button>
@@ -118,6 +123,9 @@ export default function Topbar({ session, jobSeeking: jobSeekingProp, onJobSeeki
           </div>
         )}
       </div>
+      {showHelp && session?.loggedIn && (
+        <WelcomeModal session={session} reopened onDismiss={() => setShowHelp(false)} />
+      )}
     </header>
   );
 }
