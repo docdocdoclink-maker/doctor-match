@@ -298,6 +298,8 @@ function UsersTab() {
   const [cleanupMessage, setCleanupMessage] = useState("");
   const [busyId, setBusyId] = useState(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [restoreError, setRestoreError] = useState("");
 
   useEffect(() => {
     loadUsers();
@@ -313,6 +315,7 @@ function UsersTab() {
     (u) => (!roleFilter || u.role === roleFilter) && (showDeleted || !u.deletedAt)
   );
   const hasDemoHospital = (users || []).some((u) => u.email === "demo-hospital@example.com");
+  const deletedCount = (users || []).filter((u) => u.deletedAt).length;
 
   async function handleCleanupDemo() {
     if (!window.confirm("デモ病院アカウントと、そこに紐づくデモ求人をすべて削除します。よろしいですか？")) return;
@@ -335,7 +338,10 @@ function UsersTab() {
 
   async function handleRestore(u) {
     setBusyId(u.id);
-    await fetch(`/api/admin/users/${u.id}/restore`, { method: "POST" });
+    setRestoreError("");
+    const res = await fetch(`/api/admin/users/${u.id}/restore`, { method: "POST" });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) setRestoreError(data.error || "復元に失敗しました");
     await loadUsers();
     setBusyId(null);
   }
@@ -370,6 +376,8 @@ function UsersTab() {
         )}
       </div>
 
+      {restoreError && <div className="error-box" style={{ marginBottom: 14 }}>{restoreError}</div>}
+
       <div style={{ display: "flex", gap: 14, alignItems: "center", marginBottom: 14, flexWrap: "wrap" }}>
         <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
           <option value="">すべて</option>
@@ -378,9 +386,14 @@ function UsersTab() {
         </select>
         <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#4b5563" }}>
           <input type="checkbox" checked={showDeleted} onChange={(e) => setShowDeleted(e.target.checked)} />
-          削除済みアカウントも表示
+          🗑 削除済みアカウントを表示（復元はこちらから）{deletedCount > 0 && `（${deletedCount}件）`}
         </label>
       </div>
+      {deletedCount > 0 && !showDeleted && (
+        <div className="fee-note" style={{ marginTop: -8, marginBottom: 14 }}>
+          削除済みのアカウントが{deletedCount}件あります。上のチェックを入れると一覧に表示され、各アカウントの「復元する」ボタンから元に戻せます。
+        </div>
+      )}
 
       {users === null ? (
         <div className="loading-state">読み込み中...</div>
@@ -449,12 +462,31 @@ function UsersTab() {
                       {busyId === u.id ? "処理中..." : "復元する"}
                     </button>
                   ) : (
-                    <button className="btn-outline" style={{ fontSize: 12 }} disabled={busyId === u.id} onClick={() => handleDelete(u)}>
-                      {busyId === u.id ? "処理中..." : "削除する"}
-                    </button>
+                    <>
+                      <button
+                        className="btn-outline"
+                        style={{ fontSize: 12 }}
+                        onClick={() => setEditingId(editingId === u.id ? null : u.id)}
+                      >
+                        {editingId === u.id ? "閉じる" : "編集する"}
+                      </button>
+                      <button className="btn-outline" style={{ fontSize: 12 }} disabled={busyId === u.id} onClick={() => handleDelete(u)}>
+                        {busyId === u.id ? "処理中..." : "削除する"}
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
+              {editingId === u.id && (
+                <EditUserForm
+                  user={u}
+                  onDone={() => {
+                    setEditingId(null);
+                    loadUsers();
+                  }}
+                  onCancel={() => setEditingId(null)}
+                />
+              )}
             </div>
           ))}
         </div>
@@ -520,6 +552,75 @@ function CreateUserForm({ onDone, onCancel }) {
       <div style={{ display: "flex", gap: 8 }}>
         <button type="submit" className="btn-primary" disabled={submitting}>
           {submitting ? "作成中..." : "作成する"}
+        </button>
+        <button type="button" className="btn-outline" onClick={onCancel}>
+          キャンセル
+        </button>
+      </div>
+    </form>
+  );
+}
+
+// Lets admin correct a hospital/doctor's own info on their behalf (e.g. a
+// typo or a name/phone change reported via Contact). Role isn't editable —
+// that would need a very different accompanying data cleanup.
+function EditUserForm({ user, onDone, onCancel }) {
+  const [displayName, setDisplayName] = useState(user.displayName || "");
+  const [email, setEmail] = useState(user.email || "");
+  const [phone, setPhone] = useState(user.phone || "");
+  const [specialty, setSpecialty] = useState(user.specialty || "");
+  const [licenseNumber, setLicenseNumber] = useState(user.licenseNumber || "");
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setError("");
+    setSubmitting(true);
+    const res = await fetch(`/api/admin/users/${user.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ displayName, email, phone, specialty, licenseNumber }),
+    });
+    const data = await res.json();
+    setSubmitting(false);
+    if (!res.ok) {
+      setError(data.error || "更新に失敗しました");
+      return;
+    }
+    onDone();
+  }
+
+  return (
+    <form onSubmit={handleSubmit} style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #e5e7eb" }}>
+      {error && <div className="error-box">{error}</div>}
+      <label className="field">
+        {user.role === "hospital" ? "病院名" : "お名前"}
+        <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} required />
+      </label>
+      <label className="field">
+        メールアドレス
+        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+      </label>
+      <label className="field">
+        電話番号
+        <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
+      </label>
+      {user.role === "doctor" && (
+        <>
+          <label className="field">
+            専門医資格
+            <input value={specialty} onChange={(e) => setSpecialty(e.target.value)} />
+          </label>
+          <label className="field">
+            医籍番号
+            <input value={licenseNumber} onChange={(e) => setLicenseNumber(e.target.value)} />
+          </label>
+        </>
+      )}
+      <div style={{ display: "flex", gap: 8 }}>
+        <button type="submit" className="btn-primary" disabled={submitting}>
+          {submitting ? "保存中..." : "保存する"}
         </button>
         <button type="button" className="btn-outline" onClick={onCancel}>
           キャンセル

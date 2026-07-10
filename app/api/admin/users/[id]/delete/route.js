@@ -6,6 +6,10 @@ import { getSession } from "@/lib/session";
 // forced to 'rejected' so any active session also loses write access) but
 // keeps the row so it can be restored. A hospital's own postings are closed
 // at the same time so they drop out of the public listing.
+//
+// email is UNIQUE, so the real address moves to original_email and `email`
+// is replaced with a per-id placeholder — otherwise this address could never
+// sign up again while the deleted row still exists. Restore reverses this.
 export async function POST(request, { params }) {
   const session = await getSession();
   if (!session.isAdmin) {
@@ -18,8 +22,11 @@ export async function POST(request, { params }) {
   }
 
   db.prepare(
-    "UPDATE users SET deleted_at = datetime('now'), verification_status = 'rejected' WHERE id = ?"
-  ).run(id);
+    `UPDATE users
+     SET deleted_at = datetime('now'), verification_status = 'rejected',
+         original_email = ?, email = ?
+     WHERE id = ?`
+  ).run(user.email, `deleted-${id}@doclink.invalid`, id);
 
   if (user.role === "hospital") {
     db.prepare("UPDATE jobs SET closed = 1 WHERE hospital_user_id = ? AND closed = 0").run(id);

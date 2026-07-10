@@ -16,8 +16,26 @@ export async function POST(request, { params }) {
     return NextResponse.json({ error: "ユーザーが見つかりません" }, { status: 404 });
   }
 
+  // The original address may have been claimed by a new signup while this
+  // account was deleted — email is UNIQUE, so restoring into that would
+  // collide. Surface it instead of silently failing.
+  if (user.original_email) {
+    const conflict = db
+      .prepare("SELECT id FROM users WHERE email = ? AND id != ?")
+      .get(user.original_email, id);
+    if (conflict) {
+      return NextResponse.json(
+        { error: `${user.original_email} は既に別のアカウントで使われているため復元できません。` },
+        { status: 409 }
+      );
+    }
+  }
+
   db.prepare(
-    "UPDATE users SET deleted_at = NULL, verification_status = 'approved' WHERE id = ?"
+    `UPDATE users
+     SET deleted_at = NULL, verification_status = 'approved',
+         email = COALESCE(original_email, email), original_email = NULL
+     WHERE id = ?`
   ).run(id);
 
   return NextResponse.json({ ok: true });

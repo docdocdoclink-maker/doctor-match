@@ -16,7 +16,7 @@ export async function GET() {
 
   const users = db
     .prepare(
-      `SELECT id, email, role, display_name, license_number, specialty, phone, created_at, verification_status, email_notify, deleted_at
+      `SELECT id, email, original_email, role, display_name, license_number, specialty, phone, created_at, verification_status, email_notify, deleted_at
        FROM users ORDER BY created_at DESC`
     )
     .all();
@@ -24,7 +24,10 @@ export async function GET() {
   const docsStmt = db.prepare("SELECT id, type, original_name, stored_name FROM documents WHERE user_id = ?");
   const result = users.map((u) => ({
     id: u.id,
-    email: u.email,
+    // Deleted accounts have their real address parked in original_email (see
+    // the delete route) so it can be freed up for a fresh signup — show that
+    // instead of the mangled placeholder left in `email`.
+    email: u.deleted_at && u.original_email ? u.original_email : u.email,
     role: u.role,
     displayName: u.display_name,
     licenseNumber: u.license_number,
