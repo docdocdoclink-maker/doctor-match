@@ -4,6 +4,8 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Topbar from "../../components/Topbar";
 import { getFeeForJobType, formatYen, getPaymentLinkForJobType, isFreeCampaignActive } from "../../../lib/pricing";
+import { PREFECTURES, SHIFT_TYPES, WEEKDAYS, SKILLS } from "../../../lib/jobOptions";
+import { ALL_DEPTS } from "../../../lib/depts";
 
 function formatDateTime(sqliteText) {
   if (!sqliteText) return "";
@@ -125,6 +127,16 @@ export default function JobDetailPage() {
   const [inviteError, setInviteError] = useState("");
   const [inviteSending, setInviteSending] = useState(false);
   const [inviteSent, setInviteSent] = useState(false);
+  const [showBroadcast, setShowBroadcast] = useState(false);
+  const [broadcastArea, setBroadcastArea] = useState("");
+  const [broadcastDept, setBroadcastDept] = useState("");
+  const [broadcastShiftType, setBroadcastShiftType] = useState("");
+  const [broadcastWeekdays, setBroadcastWeekdays] = useState([]);
+  const [broadcastSkills, setBroadcastSkills] = useState([]);
+  const [broadcastMessage, setBroadcastMessage] = useState("");
+  const [broadcastError, setBroadcastError] = useState("");
+  const [broadcastSending, setBroadcastSending] = useState(false);
+  const [broadcastResult, setBroadcastResult] = useState(null);
   const [confirming, setConfirming] = useState(false);
   const [closing, setClosing] = useState(false);
   const [composerFocused, setComposerFocused] = useState(false);
@@ -291,6 +303,38 @@ export default function JobDetailPage() {
     setInviteSending(false);
     await loadConversations();
     setActiveDoctorId(data.doctorId);
+  }
+
+  function toggleBroadcastList(list, setList, value) {
+    setList(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
+  }
+
+  async function handleBroadcast(e) {
+    e.preventDefault();
+    setBroadcastError("");
+    setBroadcastSending(true);
+    const res = await fetch(`/api/jobs/${id}/broadcast`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        area: broadcastArea,
+        dept: broadcastDept,
+        shiftType: broadcastShiftType,
+        weekdays: broadcastWeekdays,
+        skills: broadcastSkills,
+        message: broadcastMessage,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setBroadcastError(data.error || "送信に失敗しました");
+      setBroadcastSending(false);
+      return;
+    }
+    setBroadcastResult(data.matchedCount);
+    setBroadcastMessage("");
+    setBroadcastSending(false);
+    await loadConversations();
   }
 
   if (notFound) {
@@ -519,6 +563,7 @@ export default function JobDetailPage() {
                     {conversations.map((c) => (
                       <option key={c.doctorUserId} value={c.doctorUserId}>
                         {c.displayName}
+                        {c.desiredEmploymentType ? `　${c.desiredEmploymentType}希望` : ""}
                         {c.specialty ? `　🏅${c.specialty}` : ""}
                         {c.lastAt ? ` ・ ${formatShortTime(c.lastAt)}` : ""}
                       </option>
@@ -532,22 +577,40 @@ export default function JobDetailPage() {
                   const desiredParts = [active.desiredArea, active.desiredType, active.desiredDept].filter(Boolean);
                   return (
                     <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
-                      {active.specialty && (
-                        <div
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 4,
-                            alignSelf: "flex-start",
-                            fontSize: 12,
-                            fontWeight: 700,
-                            color: "#8a5a00",
-                            background: "#fff3cd",
-                            borderRadius: 999,
-                            padding: "3px 10px",
-                          }}
-                        >
-                          🏅 専門医：{active.specialty}
+                      {(active.desiredEmploymentType || active.specialty) && (
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                          {active.desiredEmploymentType && (
+                            <div
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 4,
+                                fontSize: 12,
+                                fontWeight: 700,
+                                color: "#1a56db",
+                                background: "#e0edff",
+                                borderRadius: 999,
+                                padding: "3px 10px",
+                              }}
+                            >
+                              {active.desiredEmploymentType}希望
+                            </div>
+                          )}
+                          {active.specialty && (
+                            <div
+                              style={{
+                                fontSize: 12,
+                                fontWeight: 700,
+                                color: "#8a5a00",
+                                background: "#fff3cd",
+                                borderRadius: 8,
+                                padding: "4px 10px",
+                                whiteSpace: "pre-line",
+                              }}
+                            >
+                              🏅 保有資格：{active.specialty}
+                            </div>
+                          )}
                         </div>
                       )}
                       {(desiredParts.length > 0 || active.desiredNote) && (
@@ -606,6 +669,138 @@ export default function JobDetailPage() {
                         {inviteSending ? "送信中..." : "送信する"}
                       </button>
                       <button type="button" className="btn-outline" onClick={() => setShowInvite(false)}>
+                        閉じる
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {!showBroadcast ? (
+                  <button
+                    type="button"
+                    className="btn-outline"
+                    style={{ marginTop: 8, marginLeft: 8, fontSize: 12 }}
+                    onClick={() => {
+                      setShowBroadcast(true);
+                      setBroadcastResult(null);
+                    }}
+                  >
+                    🔔 条件に合う医師に一斉送信する
+                  </button>
+                ) : (
+                  <form onSubmit={handleBroadcast} style={{ marginTop: 10, background: "#f9fafb", padding: 12, borderRadius: 8 }}>
+                    <p style={{ fontSize: 11, color: "#6b7280", margin: "0 0 8px" }}>
+                      指定した条件を「求人アラート」として登録している医師に、個別にメッセージを送ります。どの医師に届いたかは表示されません — 返信があった医師とだけ、その後やり取りできます。
+                    </p>
+                    {broadcastError && <div className="error-box" style={{ fontSize: 12 }}>{broadcastError}</div>}
+                    {broadcastResult !== null && (
+                      <div style={{ fontSize: 12, color: "#0a7d3c", marginBottom: 8 }}>
+                        ✓ {broadcastResult}人の医師に送信しました
+                      </div>
+                    )}
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+                      <label className="field" style={{ marginBottom: 0 }}>
+                        エリア
+                        <select value={broadcastArea} onChange={(e) => setBroadcastArea(e.target.value)}>
+                          <option value="">指定なし</option>
+                          {PREFECTURES.map((a) => (
+                            <option key={a} value={a}>
+                              {a}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="field" style={{ marginBottom: 0 }}>
+                        診療科
+                        <select value={broadcastDept} onChange={(e) => setBroadcastDept(e.target.value)}>
+                          <option value="">指定なし</option>
+                          {ALL_DEPTS.map((d) => (
+                            <option key={d} value={d}>
+                              {d}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="field" style={{ marginBottom: 0 }}>
+                        勤務形態
+                        <select value={broadcastShiftType} onChange={(e) => setBroadcastShiftType(e.target.value)}>
+                          <option value="">指定なし</option>
+                          {SHIFT_TYPES.map((s) => (
+                            <option key={s} value={s}>
+                              {s}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                    <div style={{ marginBottom: 8 }}>
+                      <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 4 }}>曜日（任意・複数選択可）</div>
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                        {WEEKDAYS.map((w) => (
+                          <label
+                            key={w}
+                            style={{
+                              fontSize: 12,
+                              border: `1px solid ${broadcastWeekdays.includes(w) ? "#1a56db" : "#d1d5db"}`,
+                              background: broadcastWeekdays.includes(w) ? "#e9f0ff" : "#fff",
+                              color: broadcastWeekdays.includes(w) ? "#1a56db" : "#4b5563",
+                              borderRadius: 999,
+                              padding: "3px 10px",
+                              cursor: "pointer",
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={broadcastWeekdays.includes(w)}
+                              onChange={() => toggleBroadcastList(broadcastWeekdays, setBroadcastWeekdays, w)}
+                              style={{ display: "none" }}
+                            />
+                            {w}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    <div style={{ marginBottom: 8 }}>
+                      <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 4 }}>対応可能な処置・スキル（任意・複数選択可）</div>
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                        {SKILLS.map((s) => (
+                          <label
+                            key={s}
+                            style={{
+                              fontSize: 12,
+                              border: `1px solid ${broadcastSkills.includes(s) ? "#1a56db" : "#d1d5db"}`,
+                              background: broadcastSkills.includes(s) ? "#e9f0ff" : "#fff",
+                              color: broadcastSkills.includes(s) ? "#1a56db" : "#4b5563",
+                              borderRadius: 999,
+                              padding: "3px 10px",
+                              cursor: "pointer",
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={broadcastSkills.includes(s)}
+                              onChange={() => toggleBroadcastList(broadcastSkills, setBroadcastSkills, s)}
+                              style={{ display: "none" }}
+                            />
+                            {s}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    <label className="field" style={{ marginBottom: 8 }}>
+                      メッセージ
+                      <textarea
+                        value={broadcastMessage}
+                        onChange={(e) => setBroadcastMessage(e.target.value)}
+                        placeholder="この条件に合う勤務をお願いできる方はいらっしゃいますか？"
+                        required
+                      />
+                    </label>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button type="submit" className="btn-primary" disabled={broadcastSending}>
+                        {broadcastSending ? "送信中..." : "送信する"}
+                      </button>
+                      <button type="button" className="btn-outline" onClick={() => setShowBroadcast(false)}>
                         閉じる
                       </button>
                     </div>
