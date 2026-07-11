@@ -378,12 +378,12 @@ export default function JobDetailPage() {
             </div>
             <h1 style={{ fontSize: 20, margin: "6px 0" }}>{job.title}</h1>
             <div style={{ color: "#4b5563", marginBottom: 4, fontSize: 14 }}>{job.hospital_name}</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
+            <div style={{ marginBottom: 16 }}>
               <span style={{ fontSize: 12, color: "#9ca3af" }}>
                 最終確認日: {formatDateOnly(job.confirmed_at || job.created_at)}
               </span>
               {isOwnerHospital && (
-                <>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8, marginTop: 8 }}>
                   <Link href={`/jobs/${id}/edit`} className="btn-outline" style={{ fontSize: 11, padding: "3px 10px", textDecoration: "none" }}>
                     内容を編集する
                   </Link>
@@ -405,7 +405,7 @@ export default function JobDetailPage() {
                   >
                     {closing ? "処理中..." : job.closed ? "求人を再掲載する" : "求人を取り下げる"}
                   </button>
-                </>
+                </div>
               )}
             </div>
             {isOwnerHospital && !!job.closed && (
