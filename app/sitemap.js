@@ -1,5 +1,11 @@
 import db from "@/lib/db";
 
+// Next.js tries to prerender this route at build time by default, but the
+// build container only ever has the in-memory placeholder DB (see
+// lib/db.js) — no jobs table exists yet. Forcing this dynamic defers
+// generation to request time, against the real volume-backed DB.
+export const dynamic = "force-dynamic";
+
 const APP_URL = process.env.APP_URL || "http://localhost:3000";
 
 function toIsoDate(sqliteText) {
