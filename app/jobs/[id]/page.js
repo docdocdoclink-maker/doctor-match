@@ -114,7 +114,6 @@ export default function JobDetailPage() {
   const [anonymous, setAnonymous] = useState(false);
   const [shareDocuments, setShareDocuments] = useState(false);
   const [sharedDocuments, setSharedDocuments] = useState([]);
-  const [hireConfirmedByDoctor, setHireConfirmedByDoctor] = useState(false);
   const [hireConfirmedByHospital, setHireConfirmedByHospital] = useState(false);
   const [confirmingHire, setConfirmingHire] = useState(false);
   const [cancelingHire, setCancelingHire] = useState(false);
@@ -205,7 +204,6 @@ export default function JobDetailPage() {
     setAnonymous(!!data.anonymous);
     setShareDocuments(!!data.shareDocuments);
     setSharedDocuments(data.documents || []);
-    setHireConfirmedByDoctor(!!data.hireConfirmedByDoctor);
     setHireConfirmedByHospital(!!data.hireConfirmedByHospital);
   }
 
@@ -929,16 +927,9 @@ export default function JobDetailPage() {
                           </div>
                         ) : (
                           <div style={{ marginTop: 10 }}>
-                            <p className="fee-note">
-                              {conversations.find((c) => c.doctorUserId === job.hired_doctor_user_id)?.hireConfirmedByDoctor
-                                ? "✓ 医師も採用について同意済みです（双方合意済み）"
-                                : "医師の確認待ちです（まだ同意していません）"}
-                            </p>
-                            {!conversations.find((c) => c.doctorUserId === job.hired_doctor_user_id)?.hireConfirmedByDoctor && (
-                              <button className="btn-outline" style={{ fontSize: 12 }} onClick={handleCancelHire} disabled={cancelingHire}>
-                                {cancelingHire ? "処理中..." : "報告を取り消す"}
-                              </button>
-                            )}
+                            <button className="btn-outline" style={{ fontSize: 12 }} onClick={handleCancelHire} disabled={cancelingHire}>
+                              {cancelingHire ? "処理中..." : "報告が誤りだった場合はこちら"}
+                            </button>
                           </div>
                         )}
                         {(job.hired_reported_by === "hospital" ||
@@ -967,22 +958,9 @@ export default function JobDetailPage() {
                       </>
                     )}
 
-                    {isDoctor && job.hired_doctor_user_id === session.userId && (
+                    {isDoctor && job.hired_doctor_user_id === session.userId && job.hired_reported_by !== "hospital" && (
                       <div style={{ marginTop: 10 }}>
-                        {job.hired_reported_by === "hospital" ? (
-                          hireConfirmedByDoctor ? (
-                            <p className="fee-note">✓ あなたも採用について同意済みです（双方合意済み）</p>
-                          ) : (
-                            <>
-                              <button className="btn-success" onClick={handleConfirmHire} disabled={confirmingHire}>
-                                {confirmingHire ? "処理中..." : "採用について同意する"}
-                              </button>
-                              <p className="fee-note">
-                                病院からの採用報告の内容に相違なければ、こちらから確認をお願いします。合意の記録として残ります。
-                              </p>
-                            </>
-                          )
-                        ) : hireConfirmedByHospital ? (
+                        {hireConfirmedByHospital ? (
                           <p className="fee-note">✓ 病院も採用について確認済みです（双方合意済み）</p>
                         ) : (
                           <>

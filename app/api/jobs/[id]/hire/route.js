@@ -58,9 +58,13 @@ export async function POST(request, { params }) {
   );
   for (const conversingDoctorId of doctorIds) {
     const isHiredDoctor = hiredDoctorUserId && conversingDoctorId === hiredDoctorUserId;
+    // A hospital's own report is final immediately — no confirmation ask.
+    // Only a doctor's self-report still needs the hospital to confirm
+    // (billing depends on the hospital's own action, so a false doctor
+    // report can't put a hospital on the hook — see confirm-hire route).
     const message = isHiredDoctor
       ? session.role === "hospital"
-        ? "病院があなたの採用を決定したと報告しました。内容に相違なければ、下の「採用について同意する」から確認をお願いします。"
+        ? "病院があなたの採用を決定しました。"
         : "採用の報告をしました。病院からの確認をお待ちください（下の「採用について確認する」から病院が確認します）。"
       : "この求人は成約となり、募集が終了しました。";
     insertMsg.run(id, conversingDoctorId, session.userId, message);
@@ -72,7 +76,7 @@ export async function POST(request, { params }) {
           ? `【DocLink】${job.title} の採用が決定しました`
           : `【DocLink】${job.title} は募集終了となりました`,
         text: isHiredDoctor
-          ? `${job.hospital_name}があなたの採用を決定したと報告しました。内容に相違なければ求人ページから確認をお願いします。\n\n求人ページ: ${APP_URL}/jobs/${id}`
+          ? `${job.hospital_name}があなたの採用を決定しました。\n\n求人ページ: ${APP_URL}/jobs/${id}`
           : `${job.hospital_name}の求人は成約となり、募集が終了しました。\n\n求人ページ: ${APP_URL}/jobs/${id}`,
       }).catch(() => {});
     }
