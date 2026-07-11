@@ -131,6 +131,19 @@ export async function POST(request, { params }) {
     return NextResponse.json({ error: "メッセージは2000文字以内で入力してください" }, { status: 400 });
   }
 
+  // Shared documents (resume/license) carry the doctor's real name, so
+  // staying anonymous and sharing them at the same time would defeat the
+  // anonymity — enforced here too, not just in the UI. Checked against the
+  // original request values (not re-checked after mutating), so anonymity
+  // wins if a request somehow asks for both.
+  if (session.role === "doctor") {
+    if (anonymous === true) {
+      shareDocuments = false;
+    } else if (shareDocuments === true) {
+      anonymous = false;
+    }
+  }
+
   const job = db.prepare("SELECT * FROM jobs WHERE id = ?").get(id);
   if (!job) {
     return NextResponse.json({ error: "求人が見つかりません" }, { status: 404 });

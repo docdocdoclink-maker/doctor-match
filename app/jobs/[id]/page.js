@@ -882,13 +882,32 @@ export default function JobDetailPage() {
                 {isDoctor && (
                   <>
                     <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#4b5563", marginBottom: 8 }}>
-                      <input type="checkbox" checked={anonymous} onChange={(e) => setAnonymous(e.target.checked)} />
+                      <input
+                        type="checkbox"
+                        checked={anonymous}
+                        onChange={(e) => {
+                          setAnonymous(e.target.checked);
+                          if (e.target.checked) setShareDocuments(false);
+                        }}
+                      />
                       匿名で連絡する（病院には「匿名の医師」として表示されます）
                     </label>
                     <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#4b5563", marginBottom: 8 }}>
-                      <input type="checkbox" checked={shareDocuments} onChange={(e) => setShareDocuments(e.target.checked)} />
+                      <input
+                        type="checkbox"
+                        checked={shareDocuments}
+                        onChange={(e) => {
+                          setShareDocuments(e.target.checked);
+                          if (e.target.checked) setAnonymous(false);
+                        }}
+                      />
                       履歴書・医師免許をこの病院に共有する（オフのままだと病院には表示されません）
                     </label>
+                    {(anonymous || shareDocuments) && (
+                      <p className="fee-note" style={{ marginTop: -4 }}>
+                        履歴書・医師免許には氏名が含まれるため、匿名と書類共有は同時に選べません。
+                      </p>
+                    )}
                   </>
                 )}
 
