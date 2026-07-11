@@ -979,11 +979,6 @@ export default function JobDetailPage() {
                           : "会話中の医師を選んでから報告すると、その医師に採用決定の通知と確認依頼が届きます。"}
                       </p>
                     )}
-                    {isDoctor && (
-                      <p className="fee-note">
-                        採用が決まったら、こちらから報告できます。報告すると病院に通知が届き、病院側で内容を確認していただく流れになります。
-                      </p>
-                    )}
                     <p className="fee-note">
                       {isOwnerHospital
                         ? isFreeCampaignActive()
