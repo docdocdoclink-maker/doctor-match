@@ -91,6 +91,8 @@ body {
 .msg-time { font-size: 10px; opacity: .6; margin-top: 3px; }
 .chat-form { display: flex; gap: 6px; }
 .chat-form input { flex: 1; padding: 8px 10px; border-radius: 6px; border: 1px solid #d1d5db; font-size: 13px; }
+.chat-form textarea { padding: 8px 10px; border-radius: 6px; border: 1.5px solid #4b5563; font-size: 13px; font-family: inherit; }
+.chat-form textarea:focus { border-color: #1a56db; outline: none; }
 
 .empty-state { text-align: center; color: #9ca3af; padding: 60px 0; font-size: 14px; }
 .loading-state { text-align: center; color: #9ca3af; padding: 60px 0; font-size: 14px; }
