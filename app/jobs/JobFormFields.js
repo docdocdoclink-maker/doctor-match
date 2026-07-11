@@ -66,8 +66,30 @@ export default function JobFormFields({ form, update }) {
         />
       </label>
       <label className="field">
+        勤務日（並び替え用）
+        <input type="date" value={form.workDate} onChange={(e) => update("workDate", e.target.value)} required />
+        <span className="fee-note" style={{ margin: "4px 0 0" }}>
+          求人一覧の「勤務日が近い順」の並び替えに使われます。上の「日時」とは別に、開始日を1つ指定してください。
+        </span>
+      </label>
+      <label className="field">
         報酬
         <input value={form.payText} onChange={(e) => update("payText", e.target.value)} placeholder="例）日当 60,000円" required />
+      </label>
+      <label className="field">
+        報酬額（万円・並び替え用）
+        <input
+          type="number"
+          min="0"
+          step="0.1"
+          value={form.payAmount}
+          onChange={(e) => update("payAmount", e.target.value)}
+          placeholder="例）6"
+          required
+        />
+        <span className="fee-note" style={{ margin: "4px 0 0" }}>
+          求人一覧の「報酬が高い順」の並び替えに使われます。上の「報酬」とは別に、金額を万円単位の数値で入力してください（例：日当6万円なら「6」）。
+        </span>
       </label>
       <label className="field">
         業務内容

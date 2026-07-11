@@ -152,6 +152,7 @@ export default function JobDetailPage() {
       .then((r) => r.json())
       .then(setSession);
     loadJob();
+    fetch(`/api/jobs/${id}/view`, { method: "POST" }).catch(() => {});
     // Navigating from one job page to another doesn't remount this
     // component (same route pattern, just a different [id]), so without
     // this, activeDoctorId/messages from the previous job would otherwise

@@ -14,6 +14,7 @@ const ALWAYS_ALLOWED = [
   "/api/contact",
   "/favicon.ico",
   "/robots.txt",
+  "/sitemap.xml",
 ];
 
 export async function proxy(request) {

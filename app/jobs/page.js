@@ -20,7 +20,7 @@ export default function JobsPage() {
   const [jobs, setJobs] = useState(null);
   const [alert, setAlert] = useState(null);
   const [alertPanelOpen, setAlertPanelOpen] = useState(false);
-  const [filters, setFilters] = useState({ area: "", type: "", dept: "" });
+  const [filters, setFilters] = useState({ area: "", type: "", dept: "", sort: "new" });
   const [showWelcome, setShowWelcome] = useState(false);
 
   useEffect(() => {
@@ -51,11 +51,51 @@ export default function JobsPage() {
   const types = JOB_TYPES;
   const depts = ALL_DEPTS;
 
-  const filtered = (jobs || []).filter(
-    (j) =>
-      (!filters.area || j.area === filters.area) &&
-      (!filters.type || j.type === filters.type) &&
-      (!filters.dept || j.dept === filters.dept)
+  const SORT_OPTIONS = [
+    { value: "new", label: "新着順" },
+    { value: "confirmed", label: "最終確認日が新しい順" },
+    { value: "pay", label: "報酬が高い順" },
+    { value: "workDate", label: "勤務日が近い順" },
+    { value: "clicks", label: "クリック数が多い順" },
+  ];
+
+  // Postings from before the pay_amount/work_date columns existed (or not
+  // yet re-saved via the edit form) have them as null — sort those to the
+  // end rather than letting null comparisons scatter them unpredictably.
+  function sortJobs(list, sortKey) {
+    const sorted = [...list];
+    if (sortKey === "confirmed") {
+      sorted.sort((a, b) => new Date(b.confirmed_at || b.created_at) - new Date(a.confirmed_at || a.created_at));
+    } else if (sortKey === "pay") {
+      sorted.sort((a, b) => {
+        if (a.pay_amount == null && b.pay_amount == null) return 0;
+        if (a.pay_amount == null) return 1;
+        if (b.pay_amount == null) return -1;
+        return b.pay_amount - a.pay_amount;
+      });
+    } else if (sortKey === "workDate") {
+      sorted.sort((a, b) => {
+        if (!a.work_date && !b.work_date) return 0;
+        if (!a.work_date) return 1;
+        if (!b.work_date) return -1;
+        return new Date(a.work_date) - new Date(b.work_date);
+      });
+    } else if (sortKey === "clicks") {
+      sorted.sort((a, b) => (b.click_count || 0) - (a.click_count || 0));
+    } else {
+      sorted.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    }
+    return sorted;
+  }
+
+  const filtered = sortJobs(
+    (jobs || []).filter(
+      (j) =>
+        (!filters.area || j.area === filters.area) &&
+        (!filters.type || j.type === filters.type) &&
+        (!filters.dept || j.dept === filters.dept)
+    ),
+    filters.sort
   );
 
   function matchesAlert(job) {
@@ -125,6 +165,13 @@ export default function JobsPage() {
             {depts.map((d) => (
               <option key={d} value={d}>
                 {d}
+              </option>
+            ))}
+          </select>
+          <select value={filters.sort} onChange={(e) => setFilters({ ...filters, sort: e.target.value })}>
+            {SORT_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                並び替え: {o.label}
               </option>
             ))}
           </select>

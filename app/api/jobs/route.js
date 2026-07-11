@@ -31,9 +31,29 @@ export async function POST(request) {
   }
 
   const body = await request.json();
-  const { title, type, area, dept, dateText, payText, desc, emergencyVolume, outpatientVolume, nightDutyNote, backupNote, hospitalWebsite, access } = body;
-  if (!title || !type || !area || !dept || !dateText || !payText || !desc) {
+  const {
+    title,
+    type,
+    area,
+    dept,
+    dateText,
+    workDate,
+    payText,
+    payAmount,
+    desc,
+    emergencyVolume,
+    outpatientVolume,
+    nightDutyNote,
+    backupNote,
+    hospitalWebsite,
+    access,
+  } = body;
+  if (!title || !type || !area || !dept || !dateText || !workDate || !payText || !desc) {
     return NextResponse.json({ error: "すべての項目を入力してください" }, { status: 400 });
+  }
+  const payAmountNum = Number(payAmount);
+  if (!Number.isFinite(payAmountNum) || payAmountNum < 0) {
+    return NextResponse.json({ error: "報酬額（万円）は0以上の数値で入力してください" }, { status: 400 });
   }
   const website = (hospitalWebsite || "").trim();
   if (website && !/^https?:\/\//i.test(website)) {
@@ -42,8 +62,8 @@ export async function POST(request) {
 
   const info = db
     .prepare(
-      `INSERT INTO jobs (hospital_user_id, hospital_name, title, type, area, dept, date_text, pay_text, desc, emergency_volume, outpatient_volume, night_duty_note, backup_note, hospital_website, access, confirmed_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`
+      `INSERT INTO jobs (hospital_user_id, hospital_name, title, type, area, dept, date_text, work_date, pay_text, pay_amount, desc, emergency_volume, outpatient_volume, night_duty_note, backup_note, hospital_website, access, confirmed_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`
     )
     .run(
       session.userId,
@@ -53,7 +73,9 @@ export async function POST(request) {
       area,
       dept,
       dateText,
+      workDate,
       payText,
+      payAmountNum,
       desc,
       (emergencyVolume || "").trim() || null,
       (outpatientVolume || "").trim() || null,
