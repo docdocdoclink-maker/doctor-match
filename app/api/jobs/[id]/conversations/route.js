@@ -18,7 +18,7 @@ export async function GET(request, { params }) {
 
   const rows = db
     .prepare(
-      `SELECT c.doctor_user_id, c.anonymous, c.hire_confirmed_by_doctor_at, u.display_name, u.specialty,
+      `SELECT c.doctor_user_id, c.anonymous, c.hire_confirmed_by_doctor_at, c.hire_confirmed_by_hospital_at, u.display_name, u.specialty,
               u.desired_employment_type,
               a.area AS desired_area, a.type AS desired_type, a.dept AS desired_dept, a.note AS desired_note,
               (SELECT text FROM messages m WHERE m.job_id = c.job_id AND m.doctor_user_id = c.doctor_user_id ORDER BY m.created_at DESC LIMIT 1) AS last_text,
@@ -44,6 +44,7 @@ export async function GET(request, { params }) {
     desiredDept: r.desired_dept || null,
     desiredNote: r.desired_note || null,
     hireConfirmedByDoctor: !!r.hire_confirmed_by_doctor_at,
+    hireConfirmedByHospital: !!r.hire_confirmed_by_hospital_at,
   }));
 
   return NextResponse.json({ conversations });

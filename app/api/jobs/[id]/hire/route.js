@@ -6,30 +6,44 @@ import { getFeeForJobType, formatYen, getPaymentLinkForJobType } from "@/lib/pri
 
 const APP_URL = process.env.APP_URL || "http://localhost:3000";
 
+// Either side can report a hire now — a hospital reporting which doctor it
+// hired, or a doctor reporting that they were the one hired. Whoever didn't
+// report it gets a chance to confirm (see confirm-hire route).
 export async function POST(request, { params }) {
   const { id } = await params;
   const session = await getSession();
-  if (!session.userId || session.role !== "hospital") {
-    return NextResponse.json({ error: "病院アカウントでログインしてください" }, { status: 403 });
+  if (!session.userId || (session.role !== "hospital" && session.role !== "doctor")) {
+    return NextResponse.json({ error: "ログインしてください" }, { status: 403 });
   }
 
   const job = db.prepare("SELECT * FROM jobs WHERE id = ?").get(id);
   if (!job) {
     return NextResponse.json({ error: "求人が見つかりません" }, { status: 404 });
   }
-  if (job.hospital_user_id !== session.userId) {
-    return NextResponse.json({ error: "この求人を編集する権限がありません" }, { status: 403 });
-  }
   if (job.hired) {
     return NextResponse.json({ error: "既に成約済みです" }, { status: 409 });
   }
 
-  const { doctorUserId } = await request.json().catch(() => ({}));
-  const hiredDoctorUserId = doctorUserId ? Number(doctorUserId) : null;
+  let hiredDoctorUserId;
+  if (session.role === "hospital") {
+    if (job.hospital_user_id !== session.userId) {
+      return NextResponse.json({ error: "この求人を編集する権限がありません" }, { status: 403 });
+    }
+    const { doctorUserId } = await request.json().catch(() => ({}));
+    hiredDoctorUserId = doctorUserId ? Number(doctorUserId) : null;
+  } else {
+    const conv = db
+      .prepare("SELECT * FROM conversations WHERE job_id = ? AND doctor_user_id = ?")
+      .get(id, session.userId);
+    if (!conv) {
+      return NextResponse.json({ error: "この求人について病院とやり取りがありません" }, { status: 403 });
+    }
+    hiredDoctorUserId = session.userId;
+  }
 
   db.prepare(
-    "UPDATE jobs SET hired = 1, hired_at = datetime('now', 'localtime'), hired_doctor_user_id = ? WHERE id = ?"
-  ).run(hiredDoctorUserId, id);
+    "UPDATE jobs SET hired = 1, hired_at = datetime('now', 'localtime'), hired_doctor_user_id = ?, hired_reported_by = ? WHERE id = ?"
+  ).run(hiredDoctorUserId, session.role, id);
 
   // Tell the hired doctor apart from everyone else who was just talking to
   // this hospital about the same posting — they get a different message
@@ -45,11 +59,13 @@ export async function POST(request, { params }) {
   for (const conversingDoctorId of doctorIds) {
     const isHiredDoctor = hiredDoctorUserId && conversingDoctorId === hiredDoctorUserId;
     const message = isHiredDoctor
-      ? "病院があなたの採用を決定したと報告しました。内容に相違なければ、下の「採用について同意する」から確認をお願いします。"
+      ? session.role === "hospital"
+        ? "病院があなたの採用を決定したと報告しました。内容に相違なければ、下の「採用について同意する」から確認をお願いします。"
+        : "採用の報告をしました。病院からの確認をお待ちください（下の「採用について確認する」から病院が確認します）。"
       : "この求人は成約となり、募集が終了しました。";
     insertMsg.run(id, conversingDoctorId, session.userId, message);
     const doctor = db.prepare("SELECT * FROM users WHERE id = ?").get(conversingDoctorId);
-    if (doctor?.email_notify) {
+    if (doctor?.email_notify && conversingDoctorId !== session.userId) {
       sendMail({
         to: doctor.email,
         subject: isHiredDoctor
@@ -64,14 +80,19 @@ export async function POST(request, { params }) {
 
   const fee = getFeeForJobType(job.type);
   const paymentLink = getPaymentLinkForJobType(job.type);
-  const hospital = db.prepare("SELECT * FROM users WHERE id = ?").get(session.userId);
+  const hospital = db.prepare("SELECT * FROM users WHERE id = ?").get(job.hospital_user_id);
   if (hospital?.email_notify) {
+    const reportedByDoctor = session.role === "doctor";
     sendMail({
       to: hospital.email,
-      subject: `【DocLink】${job.title} 成約のお手続きありがとうございます（手数料 ${formatYen(fee)}）`,
-      text: paymentLink
-        ? `成約報告ありがとうございます。手数料 ${formatYen(fee)} のお支払いを以下のリンクからお願いします。\n\n${paymentLink}\n\n求人ページ: ${APP_URL}/jobs/${id}`
-        : `成約報告ありがとうございます。手数料 ${formatYen(fee)} の請求書を追ってお送りします。\n\n求人ページ: ${APP_URL}/jobs/${id}`,
+      subject: reportedByDoctor
+        ? `【DocLink】${job.title} で医師から成約報告がありました（要確認）`
+        : `【DocLink】${job.title} 成約のお手続きありがとうございます（手数料 ${formatYen(fee)}）`,
+      text: reportedByDoctor
+        ? `医師が「採用された」と報告しました。内容に相違なければ求人ページの「採用について確認する」からご確認ください。\n\n求人ページ: ${APP_URL}/jobs/${id}`
+        : paymentLink
+          ? `成約報告ありがとうございます。手数料 ${formatYen(fee)} のお支払いを以下のリンクからお願いします。\n\n${paymentLink}\n\n求人ページ: ${APP_URL}/jobs/${id}`
+          : `成約報告ありがとうございます。手数料 ${formatYen(fee)} の請求書を追ってお送りします。\n\n求人ページ: ${APP_URL}/jobs/${id}`,
     }).catch(() => {});
   }
 

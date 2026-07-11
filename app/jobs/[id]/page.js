@@ -115,6 +115,7 @@ export default function JobDetailPage() {
   const [shareDocuments, setShareDocuments] = useState(false);
   const [sharedDocuments, setSharedDocuments] = useState([]);
   const [hireConfirmedByDoctor, setHireConfirmedByDoctor] = useState(false);
+  const [hireConfirmedByHospital, setHireConfirmedByHospital] = useState(false);
   const [confirmingHire, setConfirmingHire] = useState(false);
   const [text, setText] = useState("");
   const [file, setFile] = useState(null);
@@ -122,7 +123,8 @@ export default function JobDetailPage() {
   const [hiring, setHiring] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [showInvite, setShowInvite] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState("");
+  const [pastContacts, setPastContacts] = useState([]);
+  const [inviteDoctorId, setInviteDoctorId] = useState("");
   const [inviteMessage, setInviteMessage] = useState("");
   const [inviteError, setInviteError] = useState("");
   const [inviteSending, setInviteSending] = useState(false);
@@ -208,6 +210,7 @@ export default function JobDetailPage() {
     setShareDocuments(!!data.shareDocuments);
     setSharedDocuments(data.documents || []);
     setHireConfirmedByDoctor(!!data.hireConfirmedByDoctor);
+    setHireConfirmedByHospital(!!data.hireConfirmedByHospital);
   }
 
   async function handleSend(e) {
@@ -282,6 +285,12 @@ export default function JobDetailPage() {
     setClosing(false);
   }
 
+  async function loadPastContacts() {
+    const res = await fetch(`/api/jobs/${id}/invite`);
+    const data = await res.json();
+    setPastContacts(data.contacts || []);
+  }
+
   async function handleInvite(e) {
     e.preventDefault();
     setInviteError("");
@@ -289,7 +298,7 @@ export default function JobDetailPage() {
     const res = await fetch(`/api/jobs/${id}/invite`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: inviteEmail, message: inviteMessage }),
+      body: JSON.stringify({ doctorUserId: Number(inviteDoctorId), message: inviteMessage }),
     });
     const data = await res.json();
     if (!res.ok) {
@@ -298,10 +307,11 @@ export default function JobDetailPage() {
       return;
     }
     setInviteSent(true);
-    setInviteEmail("");
+    setInviteDoctorId("");
     setInviteMessage("");
     setInviteSending(false);
     await loadConversations();
+    await loadPastContacts();
     setActiveDoctorId(data.doctorId);
   }
 
@@ -459,82 +469,6 @@ export default function JobDetailPage() {
                 </p>
               </div>
             )}
-
-            {isOwnerHospital && (
-              <div style={{ borderTop: "1px solid #eee", paddingTop: 16, marginTop: 16 }}>
-                {job.hired ? (
-                  <>
-                    <span className="hired-badge">✓ 成約済み（{formatDateTime(job.hired_at)}）</span>
-                    {job.hired_doctor_user_id && (
-                      <p className="fee-note">
-                        {conversations.find((c) => c.doctorUserId === job.hired_doctor_user_id)?.hireConfirmedByDoctor
-                          ? "✓ 医師も採用について同意済みです（双方合意済み）"
-                          : "医師の確認待ちです（まだ同意していません）"}
-                      </p>
-                    )}
-                    {isFreeCampaignActive() ? (
-                      <p className="fee-note">
-                        🎉 今年度中（2027年3月31日まで）はキャンペーンにより手数料は無料です。お支払いは不要です。
-                      </p>
-                    ) : getPaymentLinkForJobType(job.type) ? (
-                      <p className="fee-note">
-                        手数料 {formatYen(getFeeForJobType(job.type))} のお支払いは
-                        <a
-                          href={getPaymentLinkForJobType(job.type)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{ color: "#1a56db", fontWeight: 700 }}
-                        >
-                          {" "}
-                          こちらから
-                        </a>
-                        お願いします。
-                      </p>
-                    ) : (
-                      <p className="fee-note">運営より手数料 {formatYen(getFeeForJobType(job.type))} の請求書をお送りします。</p>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <button className="btn-success" onClick={handleHire} disabled={hiring}>
-                      {hiring ? "処理中..." : "採用が決まりました（成約報告）"}
-                    </button>
-                    <p className="fee-note">
-                      {activeDoctorId
-                        ? "上で選択中の医師が採用されたものとして報告します。報告後、医師本人にも確認をお願いします。"
-                        : "会話中の医師を選んでから報告すると、その医師に採用決定の通知と確認依頼が届きます。"}
-                    </p>
-                    <p className="fee-note">
-                      {isFreeCampaignActive()
-                        ? "🎉 今年度中（2027年3月31日まで）はキャンペーンにより手数料は無料です。"
-                        : `成約報告をすると、運営から手数料 ${formatYen(getFeeForJobType(job.type))} の請求書をお送りします。`}
-                    </p>
-                  </>
-                )}
-              </div>
-            )}
-
-            {!!job.hired && !isOwnerHospital && (
-              <div style={{ borderTop: "1px solid #eee", paddingTop: 16, marginTop: 16 }}>
-                <span className="hired-badge">✓ 成約済み（{formatDateTime(job.hired_at)}）</span>
-                {isDoctor && job.hired_doctor_user_id === session.userId && (
-                  <div style={{ marginTop: 10 }}>
-                    {hireConfirmedByDoctor ? (
-                      <p className="fee-note">✓ あなたも採用について同意済みです（双方合意済み）</p>
-                    ) : (
-                      <>
-                        <button className="btn-success" onClick={handleConfirmHire} disabled={confirmingHire}>
-                          {confirmingHire ? "処理中..." : "採用について同意する"}
-                        </button>
-                        <p className="fee-note">
-                          病院からの採用報告の内容に相違なければ、こちらから確認をお願いします。合意の記録として残ります。
-                        </p>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
           </div>
 
           <div className="detail-chat">
@@ -632,29 +566,38 @@ export default function JobDetailPage() {
                     onClick={() => {
                       setShowInvite(true);
                       setInviteSent(false);
+                      loadPastContacts();
                     }}
                   >
-                    ✉️ 特定の医師にメッセージを送る
+                    ✉️ 以前やり取りした医師にメッセージを送る
                   </button>
                 ) : (
                   <form onSubmit={handleInvite} style={{ marginTop: 10, background: "#f9fafb", padding: 12, borderRadius: 8 }}>
                     <p style={{ fontSize: 11, color: "#6b7280", margin: "0 0 8px" }}>
-                      DocLinkに登録済みの医師のメールアドレス宛に、この求人についてメッセージを送れます（未登録のメールアドレスには送信できません）。
+                      以前（匿名以外で）やり取りしたことのある医師に、この求人について改めてメッセージを送れます。匿名でやり取りした医師は選べません。
                     </p>
                     {inviteError && <div className="error-box" style={{ fontSize: 12 }}>{inviteError}</div>}
                     {inviteSent && (
                       <div style={{ fontSize: 12, color: "#0a7d3c", marginBottom: 8 }}>✓ 送信しました</div>
                     )}
-                    <label className="field" style={{ marginBottom: 8 }}>
-                      医師のメールアドレス
-                      <input
-                        type="email"
-                        value={inviteEmail}
-                        onChange={(e) => setInviteEmail(e.target.value)}
-                        placeholder="doctor@example.com"
-                        required
-                      />
-                    </label>
+                    {pastContacts.length === 0 ? (
+                      <p style={{ fontSize: 12, color: "#9ca3af", marginBottom: 8 }}>
+                        まだ、匿名以外でやり取りしたことのある医師がいません。
+                      </p>
+                    ) : (
+                      <label className="field" style={{ marginBottom: 8 }}>
+                        医師を選択
+                        <select value={inviteDoctorId} onChange={(e) => setInviteDoctorId(e.target.value)} required>
+                          <option value="">選択してください</option>
+                          {pastContacts.map((c) => (
+                            <option key={c.doctorUserId} value={c.doctorUserId}>
+                              {c.displayName}
+                              {c.specialty ? `　🏅${c.specialty}` : ""}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
                     <label className="field" style={{ marginBottom: 8 }}>
                       メッセージ
                       <textarea
@@ -665,7 +608,7 @@ export default function JobDetailPage() {
                       />
                     </label>
                     <div style={{ display: "flex", gap: 8 }}>
-                      <button type="submit" className="btn-primary" disabled={inviteSending}>
+                      <button type="submit" className="btn-primary" disabled={inviteSending || pastContacts.length === 0}>
                         {inviteSending ? "送信中..." : "送信する"}
                       </button>
                       <button type="button" className="btn-outline" onClick={() => setShowInvite(false)}>
@@ -969,7 +912,7 @@ export default function JobDetailPage() {
               </>
             ) : isOwnerHospital ? (
               <p className="fee-note">
-                まだ医師からの問い合わせがありません。上の「特定の医師にメッセージを送る」から直接声をかけることもできます。
+                まだ医師からの問い合わせがありません。上の「条件に合う医師に一斉送信する」から、希望条件が合う医師に直接声をかけることもできます。
               </p>
             ) : (
               <p className="fee-note">
@@ -980,6 +923,115 @@ export default function JobDetailPage() {
                 が必要です。
               </p>
             )}
+
+            {(isOwnerHospital || isDoctor) && (
+              <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #e5e7eb" }}>
+                {!job.hired ? (
+                  <>
+                    {(isOwnerHospital || (isDoctor && activeDoctorId)) && (
+                      <button className="btn-success" onClick={handleHire} disabled={hiring}>
+                        {hiring ? "処理中..." : "採用が決まりました（成約報告）"}
+                      </button>
+                    )}
+                    {isOwnerHospital && (
+                      <p className="fee-note">
+                        {activeDoctorId
+                          ? "上で選択中の医師が採用されたものとして報告します。報告後、医師本人にも確認をお願いします。"
+                          : "会話中の医師を選んでから報告すると、その医師に採用決定の通知と確認依頼が届きます。"}
+                      </p>
+                    )}
+                    {isDoctor && (
+                      <p className="fee-note">
+                        採用が決まったら、こちらから報告できます。報告後、病院からの確認をお願いします。
+                      </p>
+                    )}
+                    <p className="fee-note">
+                      {isFreeCampaignActive()
+                        ? "🎉 今年度中（2027年3月31日まで）はキャンペーンにより手数料は無料です。"
+                        : isOwnerHospital
+                          ? `成約報告をすると、運営から手数料 ${formatYen(getFeeForJobType(job.type))} の請求書をお送りします。`
+                          : "※ 成約時のみ病院側に手数料が発生します（医師側は完全無料）"}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <span className="hired-badge">✓ 成約済み（{formatDateTime(job.hired_at)}）</span>
+
+                    {isOwnerHospital && job.hired_doctor_user_id && (
+                      <>
+                        {job.hired_reported_by === "doctor" ? (
+                          <div style={{ marginTop: 10 }}>
+                            {conversations.find((c) => c.doctorUserId === job.hired_doctor_user_id)?.hireConfirmedByHospital ? (
+                              <p className="fee-note">✓ あなたも採用について確認済みです（双方合意済み）</p>
+                            ) : (
+                              <>
+                                <button className="btn-success" onClick={handleConfirmHire} disabled={confirmingHire}>
+                                  {confirmingHire ? "処理中..." : "採用について確認する"}
+                                </button>
+                                <p className="fee-note">
+                                  医師からの採用報告の内容に相違なければ、こちらから確認をお願いします。合意の記録として残ります。
+                                </p>
+                              </>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="fee-note">
+                            {conversations.find((c) => c.doctorUserId === job.hired_doctor_user_id)?.hireConfirmedByDoctor
+                              ? "✓ 医師も採用について同意済みです（双方合意済み）"
+                              : "医師の確認待ちです（まだ同意していません）"}
+                          </p>
+                        )}
+                        {isFreeCampaignActive() ? (
+                          <p className="fee-note">
+                            🎉 今年度中（2027年3月31日まで）はキャンペーンにより手数料は無料です。お支払いは不要です。
+                          </p>
+                        ) : getPaymentLinkForJobType(job.type) ? (
+                          <p className="fee-note">
+                            手数料 {formatYen(getFeeForJobType(job.type))} のお支払いは
+                            <a
+                              href={getPaymentLinkForJobType(job.type)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{ color: "#1a56db", fontWeight: 700 }}
+                            >
+                              {" "}
+                              こちらから
+                            </a>
+                            お願いします。
+                          </p>
+                        ) : (
+                          <p className="fee-note">運営より手数料 {formatYen(getFeeForJobType(job.type))} の請求書をお送りします。</p>
+                        )}
+                      </>
+                    )}
+
+                    {isDoctor && job.hired_doctor_user_id === session.userId && (
+                      <div style={{ marginTop: 10 }}>
+                        {job.hired_reported_by === "hospital" ? (
+                          hireConfirmedByDoctor ? (
+                            <p className="fee-note">✓ あなたも採用について同意済みです（双方合意済み）</p>
+                          ) : (
+                            <>
+                              <button className="btn-success" onClick={handleConfirmHire} disabled={confirmingHire}>
+                                {confirmingHire ? "処理中..." : "採用について同意する"}
+                              </button>
+                              <p className="fee-note">
+                                病院からの採用報告の内容に相違なければ、こちらから確認をお願いします。合意の記録として残ります。
+                              </p>
+                            </>
+                          )
+                        ) : hireConfirmedByHospital ? (
+                          <p className="fee-note">✓ 病院も採用について確認済みです（双方合意済み）</p>
+                        ) : (
+                          <p className="fee-note">病院の確認待ちです（まだ確認されていません）。</p>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+
             <p className="fee-note">
               採否・条件交渉は病院・医師間で直接行ってください。運営が仲介・あっせん・調停を行うことはなく、トラブルの解決も原則として当事者間で行っていただきます。運営はやり取りの内容を通常閲覧しません。手数料の支払いに関する紛争など、やむを得ず運営による記録確認が必要な場合は、
               <Link href="/contact" style={{ color: "#1a56db", fontWeight: 700 }}>

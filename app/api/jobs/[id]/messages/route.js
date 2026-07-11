@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import db from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { saveUpload } from "@/lib/uploads";
-import { sendMail } from "@/lib/mailer";
+import { sendMail, renderEmailShell } from "@/lib/mailer";
 import { getVerificationStatus, PENDING_ACTION_ERROR } from "@/lib/verification";
 
 const APP_URL = process.env.APP_URL || "http://localhost:3000";
@@ -71,6 +71,7 @@ export async function GET(request, { params }) {
     shareDocuments: !!conv?.share_documents,
     documents,
     hireConfirmedByDoctor: !!conv?.hire_confirmed_by_doctor_at,
+    hireConfirmedByHospital: !!conv?.hire_confirmed_by_hospital_at,
   });
 }
 
@@ -198,12 +199,17 @@ async function notifyRecipient({ job, doctorId, senderRole, anonymous, text, has
   const senderLabel =
     senderRole === "doctor" ? (anonymous ? "匿名の医師" : "医師") : job.hospital_name;
   const preview = hasAttachment ? `${text || "（書類が添付されました）"}` : text;
+  const escapedPreview = preview.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const link = `${APP_URL}/jobs/${job.id}${senderRole === "doctor" ? "" : ""}`;
 
   await sendMail({
     to: recipient.email,
     subject: `【DocLink】${job.title} に新着メッセージがあります`,
     text: `${senderLabel}さんからメッセージが届きました。\n\n"${preview}"\n\n返信はこちら: ${link}\n\n---\nこのメールは通知設定をオフにすると届かなくなります。`,
-    html: `<p><strong>${senderLabel}</strong>さんからメッセージが届きました。</p><blockquote>${preview}</blockquote><p><a href="${link}">求人ページで返信する</a></p>`,
+    html: renderEmailShell(`
+      <p style="margin:0 0 12px;"><strong>${senderLabel}</strong>さんからメッセージが届きました。</p>
+      <blockquote style="margin:0 0 20px; padding:12px 16px; background:#f9fafb; border-left:3px solid #c7dcff; color:#374151; white-space:pre-line;">${escapedPreview}</blockquote>
+      <a href="${link}" style="display:inline-block; background:#1a56db; color:#ffffff; text-decoration:none; font-weight:700; font-size:13px; padding:10px 20px; border-radius:8px;">求人ページで返信する</a>
+    `),
   });
 }
