@@ -394,6 +394,7 @@ export default function JobDetailPage() {
 
   const isDoctor = session?.loggedIn && session.role === "doctor";
   const isOwnerHospital = session?.loggedIn && session.role === "hospital" && session.userId === job.hospital_user_id;
+  const showingOutreachForm = isOwnerHospital && (showInvite || showBroadcast);
   const templates = session?.role === "doctor" ? DOCTOR_QUICK_REPLIES : HOSPITAL_QUICK_REPLIES;
   const lastIncoming = [...messages].reverse().find((m) => m.sender_role !== "system" && m.sender_role !== session?.role);
   const quickReplies = rankQuickReplies(templates, lastIncoming?.text);
@@ -772,7 +773,7 @@ export default function JobDetailPage() {
               </div>
             )}
 
-            {isOwnerHospital && activeDoctorId && (
+            {isOwnerHospital && activeDoctorId && !showingOutreachForm && (
               <div style={{ marginBottom: 12, background: "#f9fafb", borderRadius: 8, padding: 12 }}>
                 <h3 style={{ fontSize: 13, margin: "0 0 6px", color: "#0d1b33" }}>提出書類</h3>
                 {sharedDocuments.length > 0 ? (
@@ -795,6 +796,12 @@ export default function JobDetailPage() {
               </div>
             )}
 
+            {showingOutreachForm && (
+              <p className="fee-note">送信フォームを閉じると、選択中の医師とのメッセージが表示されます。</p>
+            )}
+
+            {!showingOutreachForm && (
+              <>
             <h2 style={{ fontSize: 15, margin: "0 0 12px" }}>メッセージ</h2>
             <div className="chat-thread" ref={threadRef}>
               {(!activeDoctorId || messages.length === 0) ? (
@@ -961,6 +968,8 @@ export default function JobDetailPage() {
                 </Link>
                 が必要です。
               </p>
+            )}
+              </>
             )}
 
             {(isOwnerHospital || isDoctor) && (

@@ -30,6 +30,18 @@ export async function POST(request, { params }) {
     return NextResponse.json({ error: "この求人を編集する権限がありません" }, { status: 403 });
   }
 
+  if (job.last_broadcast_at) {
+    const nextAllowedAt = new Date(new Date(job.last_broadcast_at).getTime() + 7 * 24 * 60 * 60 * 1000);
+    if (nextAllowedAt > new Date()) {
+      return NextResponse.json(
+        {
+          error: `一斉送信はこの求人につき週1回までです。次回は${nextAllowedAt.toLocaleDateString("ja-JP")}以降に送信できます。`,
+        },
+        { status: 429 }
+      );
+    }
+  }
+
   const { area, dept, shiftType, weekdays, skills, message } = await request.json();
   const trimmedMessage = (message || "").trim();
   if (!trimmedMessage) {
@@ -80,6 +92,8 @@ export async function POST(request, { params }) {
       }).catch(() => {});
     }
   }
+
+  db.prepare("UPDATE jobs SET last_broadcast_at = datetime('now') WHERE id = ?").run(id);
 
   return NextResponse.json({ matchedCount: matches.length });
 }
