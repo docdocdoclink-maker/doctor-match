@@ -9,6 +9,7 @@ function jobToForm(job) {
     title: job.title,
     type: job.type,
     area: job.area,
+    city: job.city || "",
     access: job.access || "",
     dept: job.dept,
     dateText: job.date_text,

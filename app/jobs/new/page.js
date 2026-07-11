@@ -16,6 +16,7 @@ export default function NewJobPage() {
     title: "",
     type: "非常勤",
     area: "東京都",
+    city: "",
     access: "",
     dept: DEPT_CATEGORIES[0].depts[0],
     dateText: "",

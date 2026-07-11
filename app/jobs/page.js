@@ -20,7 +20,7 @@ export default function JobsPage() {
   const [jobs, setJobs] = useState(null);
   const [alert, setAlert] = useState(null);
   const [alertPanelOpen, setAlertPanelOpen] = useState(false);
-  const [filters, setFilters] = useState({ area: "", type: "", dept: "", sort: "new" });
+  const [filters, setFilters] = useState({ area: "", city: "", type: "", dept: "", sort: "new" });
   const [showWelcome, setShowWelcome] = useState(false);
 
   useEffect(() => {
@@ -99,6 +99,7 @@ export default function JobsPage() {
     (jobs || []).filter(
       (j) =>
         (!filters.area || j.area === filters.area) &&
+        (!filters.city || (j.city || "").includes(filters.city.trim())) &&
         (!filters.type || j.type === filters.type) &&
         (!filters.dept || j.dept === filters.dept)
     ),
@@ -159,6 +160,12 @@ export default function JobsPage() {
               </option>
             ))}
           </select>
+          <input
+            value={filters.city}
+            onChange={(e) => setFilters({ ...filters, city: e.target.value })}
+            placeholder="市区町村で絞り込み（任意）"
+            style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid #d1d5db", fontSize: 13 }}
+          />
           <select value={filters.type} onChange={(e) => setFilters({ ...filters, type: e.target.value })}>
             <option value="">形態: すべて</option>
             {types.map((t) => (
@@ -278,7 +285,7 @@ export default function JobsPage() {
               <Link key={job.id} href={`/jobs/${job.id}`} className={`job-card${job.hired ? " is-hired" : ""}`}>
                 <div className="job-card-top">
                   <span className="tag tag-type">{job.type}</span>
-                  <span className="tag tag-area">{job.area}</span>
+                  <span className="tag tag-area">{job.city ? `${job.area} ${job.city}` : job.area}</span>
                   {!!job.hired && <span className="tag tag-hired">成約済み</span>}
                   {!!job.closed && <span className="tag tag-hired">非公開</span>}
                   {session?.role === "doctor" && matchesAlert(job) && (

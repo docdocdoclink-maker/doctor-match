@@ -373,7 +373,7 @@ export default function JobDetailPage() {
           <div className="card">
             <div className="job-card-top">
               <span className="tag tag-type">{job.type}</span>
-              <span className="tag tag-area">{job.area}</span>
+              <span className="tag tag-area">{job.city ? `${job.area} ${job.city}` : job.area}</span>
               {!!job.closed && <span className="tag tag-hired">非公開</span>}
             </div>
             <h1 style={{ fontSize: 20, margin: "6px 0" }}>{job.title}</h1>

@@ -35,6 +35,7 @@ export async function POST(request) {
     title,
     type,
     area,
+    city,
     dept,
     dateText,
     workDate,
@@ -63,8 +64,8 @@ export async function POST(request) {
 
   const info = db
     .prepare(
-      `INSERT INTO jobs (hospital_user_id, hospital_name, title, type, area, dept, date_text, work_date, work_date_ongoing, pay_text, pay_amount, desc, emergency_volume, outpatient_volume, night_duty_note, backup_note, hospital_website, access, confirmed_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`
+      `INSERT INTO jobs (hospital_user_id, hospital_name, title, type, area, city, dept, date_text, work_date, work_date_ongoing, pay_text, pay_amount, desc, emergency_volume, outpatient_volume, night_duty_note, backup_note, hospital_website, access, confirmed_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`
     )
     .run(
       session.userId,
@@ -72,6 +73,7 @@ export async function POST(request) {
       title,
       type,
       area,
+      (city || "").trim() || null,
       dept,
       dateText,
       workDateOngoing ? null : workDate,

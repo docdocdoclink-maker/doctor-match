@@ -39,6 +39,13 @@ export default function JobFormFields({ form, update }) {
         </select>
       </label>
       <label className="field">
+        市区町村（任意）
+        <input value={form.city} onChange={(e) => update("city", e.target.value)} placeholder="例）千葉市中央区" />
+        <span className="fee-note" style={{ margin: "4px 0 0" }}>
+          求人一覧で市区町村での絞り込みに使われます。空欄のままだと都道府県全体の検索に含まれます。
+        </span>
+      </label>
+      <label className="field">
         アクセス（最寄駅など・任意）
         <input value={form.access} onChange={(e) => update("access", e.target.value)} placeholder="例）JR〇〇駅から徒歩5分" />
       </label>

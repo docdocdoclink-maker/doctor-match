@@ -22,6 +22,7 @@ export async function PATCH(request, { params }) {
     title,
     type,
     area,
+    city,
     dept,
     dateText,
     workDate,
@@ -49,7 +50,7 @@ export async function PATCH(request, { params }) {
   }
 
   db.prepare(
-    `UPDATE jobs SET title = ?, type = ?, area = ?, dept = ?, date_text = ?, work_date = ?, work_date_ongoing = ?, pay_text = ?, pay_amount = ?, desc = ?,
+    `UPDATE jobs SET title = ?, type = ?, area = ?, city = ?, dept = ?, date_text = ?, work_date = ?, work_date_ongoing = ?, pay_text = ?, pay_amount = ?, desc = ?,
        emergency_volume = ?, outpatient_volume = ?, night_duty_note = ?, backup_note = ?, hospital_website = ?, access = ?,
        confirmed_at = datetime('now')
      WHERE id = ?`
@@ -57,6 +58,7 @@ export async function PATCH(request, { params }) {
     title,
     type,
     area,
+    (city || "").trim() || null,
     dept,
     dateText,
     workDateOngoing ? null : workDate,
