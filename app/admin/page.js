@@ -649,8 +649,10 @@ function JobsTab() {
     if (statusFilter === "open") return !j.closed;
     if (statusFilter === "closed") return j.closed;
     if (statusFilter === "hired") return j.hired;
+    if (statusFilter === "awaitingConfirmation") return j.awaitingHospitalConfirmation;
     return true;
   });
+  const awaitingConfirmationCount = (jobs || []).filter((j) => j.awaitingHospitalConfirmation).length;
 
   async function handleToggleClosed(job) {
     if (!job.closed && !window.confirm(`「${job.title}」（${job.hospitalName}）を非公開にします。よろしいですか？`)) return;
@@ -669,12 +671,18 @@ function JobsTab() {
       <p className="fee-note" style={{ marginTop: 0 }}>
         病院と連絡が取れない等の事情で、運営側から求人を非公開にできます。病院アカウント自体はそのまま残ります。
       </p>
+      {awaitingConfirmationCount > 0 && (
+        <div className="fee-note" style={{ marginBottom: 8, color: "#8a5a00" }}>
+          ⚠ 医師から成約報告があり、病院がまだ確認していないものが{awaitingConfirmationCount}件あります。手数料は病院が確認するまで請求されないため、確認が滞っていれば運営から直接連絡してください。
+        </div>
+      )}
       <div style={{ marginBottom: 14 }}>
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
           <option value="">すべて</option>
           <option value="open">掲載中のみ</option>
           <option value="closed">非公開のみ</option>
           <option value="hired">成約済みのみ</option>
+          <option value="awaitingConfirmation">病院の確認待ちのみ{awaitingConfirmationCount > 0 && `（${awaitingConfirmationCount}）`}</option>
         </select>
       </div>
 
@@ -699,6 +707,11 @@ function JobsTab() {
                     {!!j.hired && (
                       <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 999, color: "#0a7d3c", background: "#e7f7ee" }}>
                         成約済み
+                      </span>
+                    )}
+                    {j.awaitingHospitalConfirmation && (
+                      <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 999, color: "#8a5a00", background: "#fff3cd" }}>
+                        ⚠ 病院の確認待ち
                       </span>
                     )}
                     {j.hospitalDeleted && (

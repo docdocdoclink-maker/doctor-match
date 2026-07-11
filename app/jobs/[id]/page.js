@@ -117,6 +117,8 @@ export default function JobDetailPage() {
   const [hireConfirmedByDoctor, setHireConfirmedByDoctor] = useState(false);
   const [hireConfirmedByHospital, setHireConfirmedByHospital] = useState(false);
   const [confirmingHire, setConfirmingHire] = useState(false);
+  const [cancelingHire, setCancelingHire] = useState(false);
+  const [cancelHireError, setCancelHireError] = useState("");
   const [text, setText] = useState("");
   const [file, setFile] = useState(null);
   const [sending, setSending] = useState(false);
@@ -265,6 +267,24 @@ export default function JobDetailPage() {
     const res = await fetch(`/api/jobs/${id}/confirm-hire`, { method: "POST" });
     if (res.ok) await loadMessages(activeDoctorId);
     setConfirmingHire(false);
+  }
+
+  async function handleCancelHire() {
+    setCancelingHire(true);
+    setCancelHireError("");
+    const res = await fetch(`/api/jobs/${id}/cancel-hire`, { method: "POST" });
+    const data = await res.json();
+    if (!res.ok) {
+      setCancelHireError(data.error || "取り消しに失敗しました");
+      setCancelingHire(false);
+      return;
+    }
+    await loadJob();
+    if (activeDoctorId) {
+      await loadMessages(activeDoctorId);
+      await loadConversations();
+    }
+    setCancelingHire(false);
   }
 
   async function handleConfirm() {
@@ -956,6 +976,7 @@ export default function JobDetailPage() {
                 ) : (
                   <>
                     <span className="hired-badge">✓ 成約済み（{formatDateTime(job.hired_at)}）</span>
+                    {cancelHireError && <div className="error-box" style={{ fontSize: 12, marginTop: 8 }}>{cancelHireError}</div>}
 
                     {isOwnerHospital && job.hired_doctor_user_id && (
                       <>
@@ -965,43 +986,57 @@ export default function JobDetailPage() {
                               <p className="fee-note">✓ あなたも採用について確認済みです（双方合意済み）</p>
                             ) : (
                               <>
-                                <button className="btn-success" onClick={handleConfirmHire} disabled={confirmingHire}>
-                                  {confirmingHire ? "処理中..." : "採用について確認する"}
-                                </button>
+                                <div style={{ display: "flex", gap: 8 }}>
+                                  <button className="btn-success" onClick={handleConfirmHire} disabled={confirmingHire || cancelingHire}>
+                                    {confirmingHire ? "処理中..." : "採用について確認する"}
+                                  </button>
+                                  <button className="btn-outline" onClick={handleCancelHire} disabled={confirmingHire || cancelingHire}>
+                                    {cancelingHire ? "処理中..." : "報告が誤りだった場合はこちら"}
+                                  </button>
+                                </div>
                                 <p className="fee-note">
-                                  医師からの採用報告の内容に相違なければ、こちらから確認をお願いします。合意の記録として残ります。
+                                  医師からの採用報告の内容に相違なければ、こちらから確認をお願いします。確認すると運営から手数料の請求メールが届きます。相違があれば右のボタンで報告を取り消せます。
                                 </p>
                               </>
                             )}
                           </div>
                         ) : (
-                          <p className="fee-note">
-                            {conversations.find((c) => c.doctorUserId === job.hired_doctor_user_id)?.hireConfirmedByDoctor
-                              ? "✓ 医師も採用について同意済みです（双方合意済み）"
-                              : "医師の確認待ちです（まだ同意していません）"}
-                          </p>
+                          <div style={{ marginTop: 10 }}>
+                            <p className="fee-note">
+                              {conversations.find((c) => c.doctorUserId === job.hired_doctor_user_id)?.hireConfirmedByDoctor
+                                ? "✓ 医師も採用について同意済みです（双方合意済み）"
+                                : "医師の確認待ちです（まだ同意していません）"}
+                            </p>
+                            {!conversations.find((c) => c.doctorUserId === job.hired_doctor_user_id)?.hireConfirmedByDoctor && (
+                              <button className="btn-outline" style={{ fontSize: 12 }} onClick={handleCancelHire} disabled={cancelingHire}>
+                                {cancelingHire ? "処理中..." : "報告を取り消す"}
+                              </button>
+                            )}
+                          </div>
                         )}
-                        {isFreeCampaignActive() ? (
-                          <p className="fee-note">
-                            🎉 今年度中（2027年3月31日まで）はキャンペーンにより手数料は無料です。お支払いは不要です。
-                          </p>
-                        ) : getPaymentLinkForJobType(job.type) ? (
-                          <p className="fee-note">
-                            手数料 {formatYen(getFeeForJobType(job.type))} のお支払いは
-                            <a
-                              href={getPaymentLinkForJobType(job.type)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              style={{ color: "#1a56db", fontWeight: 700 }}
-                            >
-                              {" "}
-                              こちらから
-                            </a>
-                            お願いします。
-                          </p>
-                        ) : (
-                          <p className="fee-note">運営より手数料 {formatYen(getFeeForJobType(job.type))} の請求書をお送りします。</p>
-                        )}
+                        {(job.hired_reported_by === "hospital" ||
+                          conversations.find((c) => c.doctorUserId === job.hired_doctor_user_id)?.hireConfirmedByHospital) &&
+                          (isFreeCampaignActive() ? (
+                            <p className="fee-note">
+                              🎉 今年度中（2027年3月31日まで）はキャンペーンにより手数料は無料です。お支払いは不要です。
+                            </p>
+                          ) : getPaymentLinkForJobType(job.type) ? (
+                            <p className="fee-note">
+                              手数料 {formatYen(getFeeForJobType(job.type))} のお支払いは
+                              <a
+                                href={getPaymentLinkForJobType(job.type)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{ color: "#1a56db", fontWeight: 700 }}
+                              >
+                                {" "}
+                                こちらから
+                              </a>
+                              お願いします。
+                            </p>
+                          ) : (
+                            <p className="fee-note">運営より手数料 {formatYen(getFeeForJobType(job.type))} の請求書をお送りします。</p>
+                          ))}
                       </>
                     )}
 
@@ -1023,7 +1058,12 @@ export default function JobDetailPage() {
                         ) : hireConfirmedByHospital ? (
                           <p className="fee-note">✓ 病院も採用について確認済みです（双方合意済み）</p>
                         ) : (
-                          <p className="fee-note">病院の確認待ちです（まだ確認されていません）。</p>
+                          <>
+                            <p className="fee-note">病院の確認待ちです（まだ確認されていません）。</p>
+                            <button className="btn-outline" style={{ fontSize: 12 }} onClick={handleCancelHire} disabled={cancelingHire}>
+                              {cancelingHire ? "処理中..." : "報告を取り消す"}
+                            </button>
+                          </>
                         )}
                       </div>
                     )}
