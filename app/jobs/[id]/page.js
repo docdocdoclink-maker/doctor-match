@@ -817,7 +817,7 @@ export default function JobDetailPage() {
                     className={
                       m.sender_role === "system"
                         ? "msg-system"
-                        : `msg ${m.sender_role === "doctor" ? "msg-doctor" : "msg-hospital"}`
+                        : `msg ${m.sender_role === session?.role ? "msg-mine" : "msg-theirs"}`
                     }
                   >
                     {m.sender_role === "system" ? (
