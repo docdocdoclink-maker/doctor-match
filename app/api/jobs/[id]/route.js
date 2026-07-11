@@ -25,6 +25,7 @@ export async function PATCH(request, { params }) {
     dept,
     dateText,
     workDate,
+    workDateOngoing,
     payText,
     payAmount,
     desc,
@@ -35,7 +36,7 @@ export async function PATCH(request, { params }) {
     hospitalWebsite,
     access,
   } = body;
-  if (!title || !type || !area || !dept || !dateText || !workDate || !payText || !desc) {
+  if (!title || !type || !area || !dept || !dateText || (!workDate && !workDateOngoing) || !payText || !desc) {
     return NextResponse.json({ error: "すべての項目を入力してください" }, { status: 400 });
   }
   const payAmountNum = Number(payAmount);
@@ -48,7 +49,7 @@ export async function PATCH(request, { params }) {
   }
 
   db.prepare(
-    `UPDATE jobs SET title = ?, type = ?, area = ?, dept = ?, date_text = ?, work_date = ?, pay_text = ?, pay_amount = ?, desc = ?,
+    `UPDATE jobs SET title = ?, type = ?, area = ?, dept = ?, date_text = ?, work_date = ?, work_date_ongoing = ?, pay_text = ?, pay_amount = ?, desc = ?,
        emergency_volume = ?, outpatient_volume = ?, night_duty_note = ?, backup_note = ?, hospital_website = ?, access = ?,
        confirmed_at = datetime('now')
      WHERE id = ?`
@@ -58,7 +59,8 @@ export async function PATCH(request, { params }) {
     area,
     dept,
     dateText,
-    workDate,
+    workDateOngoing ? null : workDate,
+    workDateOngoing ? 1 : 0,
     payText,
     payAmountNum,
     desc,

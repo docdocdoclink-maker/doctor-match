@@ -38,6 +38,7 @@ export async function POST(request) {
     dept,
     dateText,
     workDate,
+    workDateOngoing,
     payText,
     payAmount,
     desc,
@@ -48,7 +49,7 @@ export async function POST(request) {
     hospitalWebsite,
     access,
   } = body;
-  if (!title || !type || !area || !dept || !dateText || !workDate || !payText || !desc) {
+  if (!title || !type || !area || !dept || !dateText || (!workDate && !workDateOngoing) || !payText || !desc) {
     return NextResponse.json({ error: "すべての項目を入力してください" }, { status: 400 });
   }
   const payAmountNum = Number(payAmount);
@@ -62,8 +63,8 @@ export async function POST(request) {
 
   const info = db
     .prepare(
-      `INSERT INTO jobs (hospital_user_id, hospital_name, title, type, area, dept, date_text, work_date, pay_text, pay_amount, desc, emergency_volume, outpatient_volume, night_duty_note, backup_note, hospital_website, access, confirmed_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`
+      `INSERT INTO jobs (hospital_user_id, hospital_name, title, type, area, dept, date_text, work_date, work_date_ongoing, pay_text, pay_amount, desc, emergency_volume, outpatient_volume, night_duty_note, backup_note, hospital_website, access, confirmed_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`
     )
     .run(
       session.userId,
@@ -73,7 +74,8 @@ export async function POST(request) {
       area,
       dept,
       dateText,
-      workDate,
+      workDateOngoing ? null : workDate,
+      workDateOngoing ? 1 : 0,
       payText,
       payAmountNum,
       desc,

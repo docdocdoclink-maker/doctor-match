@@ -74,7 +74,14 @@ export default function JobsPage() {
         return b.pay_amount - a.pay_amount;
       });
     } else if (sortKey === "workDate") {
+      // "随時・継続的に募集中" postings have no single date to compare, but
+      // they're always available — treat them as tied for soonest rather
+      // than falling to the bottom next to postings that just never set a
+      // date at all.
       sorted.sort((a, b) => {
+        if (a.work_date_ongoing && b.work_date_ongoing) return 0;
+        if (a.work_date_ongoing) return -1;
+        if (b.work_date_ongoing) return 1;
         if (!a.work_date && !b.work_date) return 0;
         if (!a.work_date) return 1;
         if (!b.work_date) return -1;

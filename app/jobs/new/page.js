@@ -20,6 +20,7 @@ export default function NewJobPage() {
     dept: DEPT_CATEGORIES[0].depts[0],
     dateText: "",
     workDate: "",
+    workDateOngoing: false,
     payText: "",
     payAmount: "",
     desc: "",

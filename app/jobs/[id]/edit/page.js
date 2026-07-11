@@ -13,6 +13,7 @@ function jobToForm(job) {
     dept: job.dept,
     dateText: job.date_text,
     workDate: job.work_date || "",
+    workDateOngoing: !!job.work_date_ongoing,
     payText: job.pay_text,
     payAmount: job.pay_amount ?? "",
     desc: job.desc,

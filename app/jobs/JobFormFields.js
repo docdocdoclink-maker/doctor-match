@@ -67,9 +67,19 @@ export default function JobFormFields({ form, update }) {
       </label>
       <label className="field">
         勤務日（並び替え用）
-        <input type="date" value={form.workDate} onChange={(e) => update("workDate", e.target.value)} required />
+        <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#4b5563", margin: "2px 0 6px" }}>
+          <input
+            type="checkbox"
+            checked={form.workDateOngoing}
+            onChange={(e) => update("workDateOngoing", e.target.checked)}
+          />
+          随時・継続的に募集中（毎週◯曜日など、特定の1日に決まらない）
+        </label>
+        {!form.workDateOngoing && (
+          <input type="date" value={form.workDate} onChange={(e) => update("workDate", e.target.value)} required />
+        )}
         <span className="fee-note" style={{ margin: "4px 0 0" }}>
-          求人一覧の「勤務日が近い順」の並び替えに使われます。上の「日時」とは別に、開始日を1つ指定してください。
+          求人一覧の「勤務日が近い順」の並び替えに使われます。上の「日時」とは別に、開始日を1つ指定してください。繰り返し勤務などで特定の1日に決まらない場合は、上のチェックを入れると常に「近い」扱いになります。
         </span>
       </label>
       <label className="field">
