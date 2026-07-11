@@ -6,6 +6,7 @@ import { sessionOptions } from "@/lib/session";
 // can use the site. Everyone else is bounced to /coming-soon (pages) or gets
 // a 503 (API calls). Flip SITE_LOCKED=false in the env for the real launch.
 const ALWAYS_ALLOWED = [
+  "/",
   "/admin",
   "/api/admin",
   "/coming-soon",
