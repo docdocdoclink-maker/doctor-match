@@ -956,21 +956,21 @@ export default function JobDetailPage() {
                     {isOwnerHospital && (
                       <p className="fee-note">
                         {activeDoctorId
-                          ? "上で選択中の医師が採用されたものとして報告します。報告後、医師本人にも確認をお願いします。"
+                          ? "上で選択中の医師が採用されたものとして報告します。報告すると医師に通知が届き、医師側で内容を確認していただく流れになります。"
                           : "会話中の医師を選んでから報告すると、その医師に採用決定の通知と確認依頼が届きます。"}
                       </p>
                     )}
                     {isDoctor && (
                       <p className="fee-note">
-                        採用が決まったら、こちらから報告できます。報告後、病院からの確認をお願いします。
+                        採用が決まったら、こちらから報告できます。報告すると病院に通知が届き、病院側で内容を確認していただく流れになります。
                       </p>
                     )}
                     <p className="fee-note">
-                      {isFreeCampaignActive()
-                        ? "🎉 今年度中（2027年3月31日まで）はキャンペーンにより手数料は無料です。"
-                        : isOwnerHospital
-                          ? `成約報告をすると、運営から手数料 ${formatYen(getFeeForJobType(job.type))} の請求書をお送りします。`
-                          : "※ 成約時のみ病院側に手数料が発生します（医師側は完全無料）"}
+                      {isOwnerHospital
+                        ? isFreeCampaignActive()
+                          ? "🎉 今年度中（2027年3月31日まで）はキャンペーンにより手数料は無料です。"
+                          : `成約報告をすると、運営から手数料 ${formatYen(getFeeForJobType(job.type))} の請求書をお送りします。`
+                        : "※ 手数料が発生するのは病院側のみです。医師の利用は登録・閲覧・応募・成約を通じて常に無料です。"}
                     </p>
                   </>
                 ) : (
