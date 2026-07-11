@@ -124,13 +124,6 @@ export default function JobDetailPage() {
   const [sending, setSending] = useState(false);
   const [hiring, setHiring] = useState(false);
   const [uploadError, setUploadError] = useState("");
-  const [showInvite, setShowInvite] = useState(false);
-  const [pastContacts, setPastContacts] = useState([]);
-  const [inviteDoctorId, setInviteDoctorId] = useState("");
-  const [inviteMessage, setInviteMessage] = useState("");
-  const [inviteError, setInviteError] = useState("");
-  const [inviteSending, setInviteSending] = useState(false);
-  const [inviteSent, setInviteSent] = useState(false);
   const [showBroadcast, setShowBroadcast] = useState(false);
   const [broadcastArea, setBroadcastArea] = useState("");
   const [broadcastDept, setBroadcastDept] = useState("");
@@ -306,36 +299,6 @@ export default function JobDetailPage() {
     setClosing(false);
   }
 
-  async function loadPastContacts() {
-    const res = await fetch(`/api/jobs/${id}/invite`);
-    const data = await res.json();
-    setPastContacts(data.contacts || []);
-  }
-
-  async function handleInvite(e) {
-    e.preventDefault();
-    setInviteError("");
-    setInviteSending(true);
-    const res = await fetch(`/api/jobs/${id}/invite`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ doctorUserId: Number(inviteDoctorId), message: inviteMessage }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      setInviteError(data.error || "送信に失敗しました");
-      setInviteSending(false);
-      return;
-    }
-    setInviteSent(true);
-    setInviteDoctorId("");
-    setInviteMessage("");
-    setInviteSending(false);
-    await loadConversations();
-    await loadPastContacts();
-    setActiveDoctorId(data.doctorId);
-  }
-
   function toggleBroadcastList(list, setList, value) {
     setList(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
   }
@@ -395,7 +358,7 @@ export default function JobDetailPage() {
 
   const isDoctor = session?.loggedIn && session.role === "doctor";
   const isOwnerHospital = session?.loggedIn && session.role === "hospital" && session.userId === job.hospital_user_id;
-  const showingOutreachForm = isOwnerHospital && (showInvite || showBroadcast);
+  const showingOutreachForm = isOwnerHospital && showBroadcast;
   const templates = session?.role === "doctor" ? DOCTOR_QUICK_REPLIES : HOSPITAL_QUICK_REPLIES;
   const lastIncoming = [...messages].reverse().find((m) => m.sender_role !== "system" && m.sender_role !== session?.role);
   const quickReplies = rankQuickReplies(templates, lastIncoming?.text);
@@ -580,71 +543,11 @@ export default function JobDetailPage() {
                   );
                 })()}
 
-                {!showInvite ? (
-                  <button
-                    type="button"
-                    className="btn-outline"
-                    style={{ marginTop: 8, fontSize: 12 }}
-                    onClick={() => {
-                      setShowInvite(true);
-                      setInviteSent(false);
-                      loadPastContacts();
-                    }}
-                  >
-                    ✉️ 以前やり取りした医師にメッセージを送る
-                  </button>
-                ) : (
-                  <form onSubmit={handleInvite} style={{ marginTop: 10, background: "#f9fafb", padding: 12, borderRadius: 8 }}>
-                    <p style={{ fontSize: 11, color: "#6b7280", margin: "0 0 8px" }}>
-                      以前（匿名以外で）やり取りしたことのある医師に、この求人について改めてメッセージを送れます。匿名でやり取りした医師は選べません。
-                    </p>
-                    {inviteError && <div className="error-box" style={{ fontSize: 12 }}>{inviteError}</div>}
-                    {inviteSent && (
-                      <div style={{ fontSize: 12, color: "#0a7d3c", marginBottom: 8 }}>✓ 送信しました</div>
-                    )}
-                    {pastContacts.length === 0 ? (
-                      <p style={{ fontSize: 12, color: "#9ca3af", marginBottom: 8 }}>
-                        まだ、匿名以外でやり取りしたことのある医師がいません。
-                      </p>
-                    ) : (
-                      <label className="field" style={{ marginBottom: 8 }}>
-                        医師を選択
-                        <select value={inviteDoctorId} onChange={(e) => setInviteDoctorId(e.target.value)} required>
-                          <option value="">選択してください</option>
-                          {pastContacts.map((c) => (
-                            <option key={c.doctorUserId} value={c.doctorUserId}>
-                              {c.displayName}
-                              {c.specialty ? `　🏅${c.specialty}` : ""}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    )}
-                    <label className="field" style={{ marginBottom: 8 }}>
-                      メッセージ
-                      <textarea
-                        value={inviteMessage}
-                        onChange={(e) => setInviteMessage(e.target.value)}
-                        placeholder="この求人にご興味ありませんか？"
-                        required
-                      />
-                    </label>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <button type="submit" className="btn-primary" disabled={inviteSending || pastContacts.length === 0}>
-                        {inviteSending ? "送信中..." : "送信する"}
-                      </button>
-                      <button type="button" className="btn-outline" onClick={() => setShowInvite(false)}>
-                        閉じる
-                      </button>
-                    </div>
-                  </form>
-                )}
-
                 {!showBroadcast ? (
                   <button
                     type="button"
                     className="btn-outline"
-                    style={{ marginTop: 8, marginLeft: 8, fontSize: 12 }}
+                    style={{ marginTop: 8, fontSize: 12 }}
                     onClick={() => {
                       setShowBroadcast(true);
                       setBroadcastResult(null);
