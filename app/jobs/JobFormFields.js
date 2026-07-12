@@ -68,8 +68,10 @@ export default function JobFormFields({ form, update }) {
         <input
           value={form.dateText}
           onChange={(e) => update("dateText", e.target.value)}
-          placeholder="例）2026/07/12(土) 17:00〜翌9:00"
-          required
+          placeholder={
+            form.workDateOngoing ? "例）毎週金曜 17:00〜翌9:00" : "例）2026/07/12(土) 17:00〜翌9:00"
+          }
+          required={!form.workDateOngoing}
         />
       </label>
       <label className="field">

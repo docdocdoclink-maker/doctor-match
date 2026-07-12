@@ -295,7 +295,7 @@ export default function JobsPage() {
                 <h3 className="job-title">{job.title}</h3>
                 <div className="job-hospital">{job.hospital_name}</div>
                 <div className="job-meta">
-                  <span>{job.date_text}</span>
+                  <span>{job.date_text || (job.work_date_ongoing ? "随時・継続的に募集中" : "")}</span>
                   <span className="job-pay">{job.pay_text}</span>
                 </div>
                 <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>

@@ -428,7 +428,7 @@ export default function JobDetailPage() {
                 </tr>
                 <tr>
                   <th>日時</th>
-                  <td>{job.date_text}</td>
+                  <td>{job.date_text || (job.work_date_ongoing ? "随時・継続的に募集中" : "")}</td>
                 </tr>
                 <tr>
                   <th>報酬</th>

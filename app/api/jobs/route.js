@@ -50,7 +50,7 @@ export async function POST(request) {
     hospitalWebsite,
     access,
   } = body;
-  if (!title || !type || !area || !dept || !dateText || (!workDate && !workDateOngoing) || !payText || !desc) {
+  if (!title || !type || !area || !dept || (!dateText && !workDateOngoing) || (!workDate && !workDateOngoing) || !payText || !desc) {
     return NextResponse.json({ error: "すべての項目を入力してください" }, { status: 400 });
   }
   const payAmountNum = Number(payAmount);
