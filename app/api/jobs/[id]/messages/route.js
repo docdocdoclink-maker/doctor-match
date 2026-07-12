@@ -67,7 +67,12 @@ export async function GET(request, { params }) {
 
   return NextResponse.json({
     messages,
-    anonymous: !!conv?.anonymous,
+    // No conversation yet (first time opening the composer for this job) —
+    // default to anonymous so a doctor has to opt into being identified,
+    // not the other way around. Once a real conversation row exists, this
+    // always reflects whatever the doctor last actually chose, even if
+    // that's back to false.
+    anonymous: conv ? !!conv.anonymous : true,
     shareDocuments: !!conv?.share_documents,
     documents,
     hireConfirmedByDoctor: !!conv?.hire_confirmed_by_doctor_at,
