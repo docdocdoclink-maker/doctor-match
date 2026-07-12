@@ -648,11 +648,11 @@ function JobsTab() {
   const filtered = (jobs || []).filter((j) => {
     if (statusFilter === "open") return !j.closed;
     if (statusFilter === "closed") return j.closed;
-    if (statusFilter === "hired") return j.hired;
-    if (statusFilter === "awaitingConfirmation") return j.awaitingHospitalConfirmation;
+    if (statusFilter === "hired") return j.hires.length > 0;
+    if (statusFilter === "awaitingConfirmation") return j.awaitingConfirmationCount > 0;
     return true;
   });
-  const awaitingConfirmationCount = (jobs || []).filter((j) => j.awaitingHospitalConfirmation).length;
+  const awaitingConfirmationCount = (jobs || []).reduce((sum, j) => sum + j.awaitingConfirmationCount, 0);
 
   async function handleToggleClosed(job) {
     if (!job.closed && !window.confirm(`「${job.title}」（${job.hospitalName}）を非公開にします。よろしいですか？`)) return;
@@ -704,14 +704,14 @@ function JobsTab() {
                         非公開
                       </span>
                     )}
-                    {!!j.hired && (
+                    {j.hires.length > 0 && (
                       <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 999, color: "#0a7d3c", background: "#e7f7ee" }}>
-                        成約済み
+                        成約 {j.hires.length}件
                       </span>
                     )}
-                    {j.awaitingHospitalConfirmation && (
+                    {j.awaitingConfirmationCount > 0 && (
                       <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 999, color: "#8a5a00", background: "#fff3cd" }}>
-                        ⚠ 病院の確認待ち
+                        ⚠ 病院の確認待ち {j.awaitingConfirmationCount}件
                       </span>
                     )}
                     {j.hospitalDeleted && (
@@ -725,6 +725,16 @@ function JobsTab() {
                   </div>
                   <div style={{ fontSize: 12, color: "#6b7280" }}>{j.hospitalEmail}{j.hospitalPhone ? ` ・ ${j.hospitalPhone}` : ""}</div>
                   <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 2 }}>掲載日時: {formatDateTime(j.createdAt)}</div>
+                  {j.hires.length > 0 && (
+                    <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 3 }}>
+                      {j.hires.map((h) => (
+                        <div key={h.doctorUserId} style={{ fontSize: 12, color: "#374151" }}>
+                          ・{h.doctorName}（{h.hiredReportedBy === "hospital" ? "病院報告" : "医師報告"} ・ {formatDateTime(h.hiredAt)}）
+                          {h.awaitingHospitalConfirmation && <span style={{ color: "#8a5a00", fontWeight: 700 }}> ⚠未確認</span>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <button className="btn-outline" style={{ fontSize: 12 }} disabled={busyId === j.id} onClick={() => handleToggleClosed(j)}>
                   {busyId === j.id ? "処理中..." : j.closed ? "再掲載する" : "非公開にする"}

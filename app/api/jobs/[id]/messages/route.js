@@ -72,6 +72,9 @@ export async function GET(request, { params }) {
     documents,
     hireConfirmedByDoctor: !!conv?.hire_confirmed_by_doctor_at,
     hireConfirmedByHospital: !!conv?.hire_confirmed_by_hospital_at,
+    hired: !!conv?.hired,
+    hiredAt: conv?.hired_at || null,
+    hiredReportedBy: conv?.hired_reported_by || null,
   });
 }
 

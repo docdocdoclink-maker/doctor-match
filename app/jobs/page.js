@@ -282,11 +282,10 @@ export default function JobsPage() {
         ) : (
           <div className="job-list">
             {filtered.map((job) => (
-              <Link key={job.id} href={`/jobs/${job.id}`} className={`job-card${job.hired ? " is-hired" : ""}`}>
+              <Link key={job.id} href={`/jobs/${job.id}`} className="job-card">
                 <div className="job-card-top">
                   <span className="tag tag-type">{job.type}</span>
                   <span className="tag tag-area">{job.city ? `${job.area} ${job.city}` : job.area}</span>
-                  {!!job.hired && <span className="tag tag-hired">成約済み</span>}
                   {!!job.closed && <span className="tag tag-hired">非公開</span>}
                   {session?.role === "doctor" && matchesAlert(job) && (
                     <span className="tag tag-alert">🔔 条件に一致</span>

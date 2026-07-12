@@ -6,9 +6,11 @@ import { getFeeForJobType, formatYen, getPaymentLinkForJobType, isFreeCampaignAc
 
 const APP_URL = process.env.APP_URL || "http://localhost:3000";
 
-// Either side can report a hire now — a hospital reporting which doctor it
-// hired, or a doctor reporting that they were the one hired. Whoever didn't
-// report it gets a chance to confirm (see confirm-hire route).
+// Hire state lives per (job_id, doctor_user_id) conversation, not per job —
+// a job can have several independent hires (e.g. filling more than one
+// shift from the same posting), each billed separately. Hiring doesn't
+// touch jobs.closed at all; the listing only closes when the hospital
+// closes it manually (see the close route).
 export async function POST(request, { params }) {
   const { id } = await params;
   const session = await getSession();
@@ -20,71 +22,54 @@ export async function POST(request, { params }) {
   if (!job) {
     return NextResponse.json({ error: "求人が見つかりません" }, { status: 404 });
   }
-  if (job.hired) {
-    return NextResponse.json({ error: "既に成約済みです" }, { status: 409 });
-  }
 
-  let hiredDoctorUserId;
+  let doctorUserId;
   if (session.role === "hospital") {
     if (job.hospital_user_id !== session.userId) {
       return NextResponse.json({ error: "この求人を編集する権限がありません" }, { status: 403 });
     }
-    const { doctorUserId } = await request.json().catch(() => ({}));
-    hiredDoctorUserId = doctorUserId ? Number(doctorUserId) : null;
-  } else {
-    const conv = db
-      .prepare("SELECT * FROM conversations WHERE job_id = ? AND doctor_user_id = ?")
-      .get(id, session.userId);
-    if (!conv) {
-      return NextResponse.json({ error: "この求人について病院とやり取りがありません" }, { status: 403 });
+    const body = await request.json().catch(() => ({}));
+    doctorUserId = Number(body.doctorUserId);
+    if (!doctorUserId) {
+      return NextResponse.json({ error: "採用する医師を選択してください" }, { status: 400 });
     }
-    hiredDoctorUserId = session.userId;
+  } else {
+    doctorUserId = session.userId;
   }
 
-  // Also closes the listing — a filled position shouldn't keep showing up
-  // in the public job search as if it were still open. Chat is unaffected
-  // either way (see app/api/jobs/[id]/messages/route.js, which doesn't
-  // check closed at all), so this doesn't block the parties from still
-  // talking after the fact.
+  const conv = db
+    .prepare("SELECT * FROM conversations WHERE job_id = ? AND doctor_user_id = ?")
+    .get(id, doctorUserId);
+  if (!conv) {
+    return NextResponse.json({ error: "この医師との会話が見つかりません" }, { status: 403 });
+  }
+  if (conv.hired) {
+    return NextResponse.json({ error: "この医師については既に採用報告済みです" }, { status: 409 });
+  }
+
   db.prepare(
-    "UPDATE jobs SET hired = 1, hired_at = datetime('now', 'localtime'), hired_doctor_user_id = ?, hired_reported_by = ?, closed = 1 WHERE id = ?"
-  ).run(hiredDoctorUserId, session.role, id);
+    "UPDATE conversations SET hired = 1, hired_at = datetime('now', 'localtime'), hired_reported_by = ? WHERE job_id = ? AND doctor_user_id = ?"
+  ).run(session.role, id, doctorUserId);
 
-  // Tell the hired doctor apart from everyone else who was just talking to
-  // this hospital about the same posting — they get a different message
-  // and a chance to confirm the hire themselves (see confirm-hire route).
-  const doctorIds = db
-    .prepare("SELECT doctor_user_id FROM conversations WHERE job_id = ?")
-    .all(id)
-    .map((r) => r.doctor_user_id);
-
-  const insertMsg = db.prepare(
+  // A hospital's own report is final immediately — no confirmation ask.
+  // Only a doctor's self-report still needs the hospital to confirm
+  // (billing depends on the hospital's own action, so a false doctor
+  // report can't put a hospital on the hook — see confirm-hire route).
+  const message =
+    session.role === "hospital"
+      ? "病院があなたの採用を決定しました。"
+      : "採用の報告をしました。病院からの確認をお待ちください（下の「採用について確認する」から病院が確認します）。";
+  db.prepare(
     "INSERT INTO messages (job_id, doctor_user_id, sender_user_id, sender_role, text) VALUES (?, ?, ?, 'system', ?)"
-  );
-  for (const conversingDoctorId of doctorIds) {
-    const isHiredDoctor = hiredDoctorUserId && conversingDoctorId === hiredDoctorUserId;
-    // A hospital's own report is final immediately — no confirmation ask.
-    // Only a doctor's self-report still needs the hospital to confirm
-    // (billing depends on the hospital's own action, so a false doctor
-    // report can't put a hospital on the hook — see confirm-hire route).
-    const message = isHiredDoctor
-      ? session.role === "hospital"
-        ? "病院があなたの採用を決定しました。"
-        : "採用の報告をしました。病院からの確認をお待ちください（下の「採用について確認する」から病院が確認します）。"
-      : "この求人は成約となり、募集が終了しました。";
-    insertMsg.run(id, conversingDoctorId, session.userId, message);
-    const doctor = db.prepare("SELECT * FROM users WHERE id = ?").get(conversingDoctorId);
-    if (doctor?.email_notify && conversingDoctorId !== session.userId) {
-      sendMail({
-        to: doctor.email,
-        subject: isHiredDoctor
-          ? `【DocLink】${job.title} の採用が決定しました`
-          : `【DocLink】${job.title} は募集終了となりました`,
-        text: isHiredDoctor
-          ? `${job.hospital_name}があなたの採用を決定しました。\n\n求人ページ: ${APP_URL}/jobs/${id}`
-          : `${job.hospital_name}の求人は成約となり、募集が終了しました。\n\n求人ページ: ${APP_URL}/jobs/${id}`,
-      }).catch(() => {});
-    }
+  ).run(id, doctorUserId, session.userId, message);
+
+  const doctor = db.prepare("SELECT * FROM users WHERE id = ?").get(doctorUserId);
+  if (doctor?.email_notify && doctorUserId !== session.userId) {
+    sendMail({
+      to: doctor.email,
+      subject: `【DocLink】${job.title} の採用が決定しました`,
+      text: `${job.hospital_name}があなたの採用を決定しました。\n\n求人ページ: ${APP_URL}/jobs/${id}`,
+    }).catch(() => {});
   }
 
   const fee = getFeeForJobType(job.type);
@@ -110,6 +95,5 @@ export async function POST(request, { params }) {
     }).catch(() => {});
   }
 
-  const updated = db.prepare("SELECT * FROM jobs WHERE id = ?").get(id);
-  return NextResponse.json({ job: updated });
+  return NextResponse.json({ ok: true });
 }

@@ -11,7 +11,8 @@ const APP_URL = process.env.APP_URL || "http://localhost:3000";
 // pays the fee either way (see the hire route). A doctor's self-report is
 // different: only the hospital confirming it here (its own affirmative
 // action) starts billing, so a false doctor report can't put a hospital on
-// the hook for a fee it never agreed to.
+// the hook for a fee it never agreed to. Scoped to one (job, doctor)
+// conversation, since a job can have several independent hires.
 export async function POST(request, { params }) {
   const { id } = await params;
   const session = await getSession();
@@ -20,19 +21,21 @@ export async function POST(request, { params }) {
   }
 
   const job = db.prepare("SELECT * FROM jobs WHERE id = ?").get(id);
-  if (!job || !job.hired) {
-    return NextResponse.json({ error: "確認できる採用報告がありません" }, { status: 403 });
-  }
-  if (job.hired_reported_by !== "doctor" || job.hospital_user_id !== session.userId) {
-    return NextResponse.json({ error: "確認できる採用報告がありません" }, { status: 403 });
+  if (!job || job.hospital_user_id !== session.userId) {
+    return NextResponse.json({ error: "この求人を編集する権限がありません" }, { status: 403 });
   }
 
-  const doctorUserId = job.hired_doctor_user_id;
+  const body = await request.json().catch(() => ({}));
+  const doctorUserId = Number(body.doctorUserId);
+  if (!doctorUserId) {
+    return NextResponse.json({ error: "確認する医師を選択してください" }, { status: 400 });
+  }
+
   const conv = db
     .prepare("SELECT * FROM conversations WHERE job_id = ? AND doctor_user_id = ?")
     .get(id, doctorUserId);
-  if (!conv) {
-    return NextResponse.json({ error: "会話が見つかりません" }, { status: 404 });
+  if (!conv || !conv.hired || conv.hired_reported_by !== "doctor") {
+    return NextResponse.json({ error: "確認できる採用報告がありません" }, { status: 403 });
   }
   if (conv.hire_confirmed_by_hospital_at) {
     return NextResponse.json({ error: "既に確認済みです" }, { status: 409 });
@@ -46,6 +49,10 @@ export async function POST(request, { params }) {
     "INSERT INTO messages (job_id, doctor_user_id, sender_user_id, sender_role, text) VALUES (?, ?, ?, 'system', ?)"
   ).run(id, doctorUserId, session.userId, "病院が採用について確認したことを記録しました。");
 
+  // The hospital confirming a doctor-reported hire is the hospital's own
+  // affirmative action — this is when billing kicks in for that path (see
+  // the note above and the hire route, which skips the invoice at report
+  // time for doctor-initiated reports).
   const fee = getFeeForJobType(job.type);
   const paymentLink = getPaymentLinkForJobType(job.type);
   const freeCampaign = isFreeCampaignActive();

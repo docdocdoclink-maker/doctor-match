@@ -115,6 +115,9 @@ export default function JobDetailPage() {
   const [shareDocuments, setShareDocuments] = useState(false);
   const [sharedDocuments, setSharedDocuments] = useState([]);
   const [hireConfirmedByHospital, setHireConfirmedByHospital] = useState(false);
+  const [hired, setHired] = useState(false);
+  const [hiredAt, setHiredAt] = useState(null);
+  const [hiredReportedBy, setHiredReportedBy] = useState(null);
   const [confirmingHire, setConfirmingHire] = useState(false);
   const [cancelingHire, setCancelingHire] = useState(false);
   const [cancelHireError, setCancelHireError] = useState("");
@@ -204,6 +207,9 @@ export default function JobDetailPage() {
     setShareDocuments(!!data.shareDocuments);
     setSharedDocuments(data.documents || []);
     setHireConfirmedByHospital(!!data.hireConfirmedByHospital);
+    setHired(!!data.hired);
+    setHiredAt(data.hiredAt || null);
+    setHiredReportedBy(data.hiredReportedBy || null);
   }
 
   async function handleSend(e) {
@@ -237,44 +243,52 @@ export default function JobDetailPage() {
   }
 
   async function handleHire() {
+    if (!activeDoctorId) return;
     setHiring(true);
     const res = await fetch(`/api/jobs/${id}/hire`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ doctorUserId: activeDoctorId || null }),
+      body: JSON.stringify({ doctorUserId: activeDoctorId }),
     });
     if (res.ok) {
-      await loadJob();
-      if (activeDoctorId) {
-        await loadMessages(activeDoctorId);
-        await loadConversations();
-      }
+      await loadMessages(activeDoctorId);
+      if (session?.role === "hospital") await loadConversations();
     }
     setHiring(false);
   }
 
   async function handleConfirmHire() {
+    if (!activeDoctorId) return;
     setConfirmingHire(true);
-    const res = await fetch(`/api/jobs/${id}/confirm-hire`, { method: "POST" });
-    if (res.ok) await loadMessages(activeDoctorId);
+    const res = await fetch(`/api/jobs/${id}/confirm-hire`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ doctorUserId: activeDoctorId }),
+    });
+    if (res.ok) {
+      await loadMessages(activeDoctorId);
+      if (session?.role === "hospital") await loadConversations();
+    }
     setConfirmingHire(false);
   }
 
   async function handleCancelHire() {
+    if (!activeDoctorId) return;
     setCancelingHire(true);
     setCancelHireError("");
-    const res = await fetch(`/api/jobs/${id}/cancel-hire`, { method: "POST" });
+    const res = await fetch(`/api/jobs/${id}/cancel-hire`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ doctorUserId: activeDoctorId }),
+    });
     const data = await res.json();
     if (!res.ok) {
       setCancelHireError(data.error || "取り消しに失敗しました");
       setCancelingHire(false);
       return;
     }
-    await loadJob();
-    if (activeDoctorId) {
-      await loadMessages(activeDoctorId);
-      await loadConversations();
-    }
+    await loadMessages(activeDoctorId);
+    if (session?.role === "hospital") await loadConversations();
     setCancelingHire(false);
   }
 
@@ -442,7 +456,7 @@ export default function JobDetailPage() {
 
             <WorkRealitySection job={job} />
 
-            {isDoctor && !job.hired && (
+            {isDoctor && !hired && (
               <div style={{ borderTop: "1px solid #eee", paddingTop: 16 }}>
                 <p className="fee-note">
                   {isFreeCampaignActive()
@@ -478,6 +492,7 @@ export default function JobDetailPage() {
                     {conversations.length === 0 && <option>まだ問い合わせがありません</option>}
                     {conversations.map((c) => (
                       <option key={c.doctorUserId} value={c.doctorUserId}>
+                        {c.hired ? "✓採用済み　" : ""}
                         {c.displayName}
                         {c.desiredEmploymentType ? `　${c.desiredEmploymentType}希望` : ""}
                         {c.specialty ? `　🏅${c.specialty}` : ""}
@@ -875,18 +890,18 @@ export default function JobDetailPage() {
 
             {(isOwnerHospital || isDoctor) && (
               <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #e5e7eb" }}>
-                {!job.hired ? (
+                {!activeDoctorId ? (
+                  isOwnerHospital && (
+                    <p className="fee-note">会話中の医師を選ぶと、ここから採用を報告できます。</p>
+                  )
+                ) : !hired ? (
                   <>
-                    {(isOwnerHospital || (isDoctor && activeDoctorId)) && (
-                      <button className="btn-success" onClick={handleHire} disabled={hiring}>
-                        {hiring ? "処理中..." : "採用が決まりました（成約報告）"}
-                      </button>
-                    )}
+                    <button className="btn-success" onClick={handleHire} disabled={hiring}>
+                      {hiring ? "処理中..." : "採用が決まりました（成約報告）"}
+                    </button>
                     {isOwnerHospital && (
                       <p className="fee-note">
-                        {activeDoctorId
-                          ? "上で選択中の医師が採用されたものとして報告します。報告すると医師に通知が届き、医師側で内容を確認していただく流れになります。"
-                          : "会話中の医師を選んでから報告すると、その医師に採用決定の通知と確認依頼が届きます。"}
+                        上で選択中の医師が採用されたものとして報告します。報告すると医師に通知が届き、医師側で内容を確認していただく流れになります。同じ求人で他の医師を採用する場合も、それぞれ個別に報告できます。
                       </p>
                     )}
                     <p className="fee-note">
@@ -899,14 +914,14 @@ export default function JobDetailPage() {
                   </>
                 ) : (
                   <>
-                    <span className="hired-badge">✓ 成約済み（{formatDateTime(job.hired_at)}）</span>
+                    <span className="hired-badge">✓ 成約済み（{formatDateTime(hiredAt)}）</span>
                     {cancelHireError && <div className="error-box" style={{ fontSize: 12, marginTop: 8 }}>{cancelHireError}</div>}
 
-                    {isOwnerHospital && job.hired_doctor_user_id && (
+                    {isOwnerHospital && (
                       <>
-                        {job.hired_reported_by === "doctor" ? (
+                        {hiredReportedBy === "doctor" ? (
                           <div style={{ marginTop: 10 }}>
-                            {conversations.find((c) => c.doctorUserId === job.hired_doctor_user_id)?.hireConfirmedByHospital ? (
+                            {hireConfirmedByHospital ? (
                               <p className="fee-note">✓ あなたも採用について確認済みです（双方合意済み）</p>
                             ) : (
                               <>
@@ -931,8 +946,7 @@ export default function JobDetailPage() {
                             </button>
                           </div>
                         )}
-                        {(job.hired_reported_by === "hospital" ||
-                          conversations.find((c) => c.doctorUserId === job.hired_doctor_user_id)?.hireConfirmedByHospital) &&
+                        {(hiredReportedBy === "hospital" || hireConfirmedByHospital) &&
                           (isFreeCampaignActive() ? (
                             <p className="fee-note">
                               🎉 今年度中（2027年3月31日まで）はキャンペーンにより手数料は無料です。お支払いは不要です。
@@ -957,7 +971,7 @@ export default function JobDetailPage() {
                       </>
                     )}
 
-                    {isDoctor && job.hired_doctor_user_id === session.userId && job.hired_reported_by !== "hospital" && (
+                    {isDoctor && hiredReportedBy !== "hospital" && (
                       <div style={{ marginTop: 10 }}>
                         {hireConfirmedByHospital ? (
                           <p className="fee-note">✓ 病院も採用について確認済みです（双方合意済み）</p>
