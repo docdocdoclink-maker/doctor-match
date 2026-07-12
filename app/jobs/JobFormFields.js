@@ -1,5 +1,5 @@
 import { DEPT_CATEGORIES } from "../../lib/depts";
-import { JOB_TYPES, PREFECTURES } from "../../lib/jobOptions";
+import { JOB_TYPES, PREFECTURES, PAY_UNITS } from "../../lib/jobOptions";
 import { getFeeForJobType, formatYen, isFreeCampaignActive } from "../../lib/pricing";
 
 // Shared field set for both "post a new job" and "edit an existing job" —
@@ -93,22 +93,41 @@ export default function JobFormFields({ form, update }) {
       </label>
       <label className="field">
         報酬
-        <input value={form.payText} onChange={(e) => update("payText", e.target.value)} placeholder="例）日当 60,000円" required />
+        <div style={{ display: "flex", gap: 8 }}>
+          <select
+            value={form.payUnit}
+            onChange={(e) => update("payUnit", e.target.value)}
+            style={{ flex: "0 0 90px" }}
+          >
+            {PAY_UNITS.map((u) => (
+              <option key={u} value={u}>
+                {u}
+              </option>
+            ))}
+          </select>
+          <input
+            type="number"
+            min="0"
+            step="0.1"
+            value={form.payAmount}
+            onChange={(e) => update("payAmount", e.target.value)}
+            placeholder="例）6"
+            required
+            style={{ flex: 1 }}
+          />
+          <span style={{ alignSelf: "center", fontSize: 13, color: "#4b5563" }}>万円</span>
+        </div>
+        <span className="fee-note" style={{ margin: "4px 0 0" }}>
+          金額は万円単位で入力してください（例：日当6万円なら「6」）。求人一覧の「報酬が高い順」の並び替えにも使われます。
+        </span>
       </label>
       <label className="field">
-        報酬額（万円・並び替え用）
+        報酬の補足（任意）
         <input
-          type="number"
-          min="0"
-          step="0.1"
-          value={form.payAmount}
-          onChange={(e) => update("payAmount", e.target.value)}
-          placeholder="例）6"
-          required
+          value={form.payNote}
+          onChange={(e) => update("payNote", e.target.value)}
+          placeholder="例）経験に応じて相談可"
         />
-        <span className="fee-note" style={{ margin: "4px 0 0" }}>
-          求人一覧の「報酬が高い順」の並び替えに使われます。上の「報酬」とは別に、金額を万円単位の数値で入力してください（例：日当6万円なら「6」）。
-        </span>
       </label>
       <label className="field">
         業務内容

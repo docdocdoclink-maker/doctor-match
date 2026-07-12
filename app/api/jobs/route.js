@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import db from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { getVerificationStatus, PENDING_ACTION_ERROR } from "@/lib/verification";
+import { buildPayText } from "@/lib/pricing";
+import { PAY_UNITS } from "@/lib/jobOptions";
 
 export async function GET() {
   const session = await getSession();
@@ -40,8 +42,9 @@ export async function POST(request) {
     dateText,
     workDate,
     workDateOngoing,
-    payText,
+    payUnit,
     payAmount,
+    payNote,
     desc,
     emergencyVolume,
     outpatientVolume,
@@ -50,7 +53,16 @@ export async function POST(request) {
     hospitalWebsite,
     access,
   } = body;
-  if (!title || !type || !area || !dept || (!dateText && !workDateOngoing) || (!workDate && !workDateOngoing) || !payText || !desc) {
+  if (
+    !title ||
+    !type ||
+    !area ||
+    !dept ||
+    (!dateText && !workDateOngoing) ||
+    (!workDate && !workDateOngoing) ||
+    !PAY_UNITS.includes(payUnit) ||
+    !desc
+  ) {
     return NextResponse.json({ error: "すべての項目を入力してください" }, { status: 400 });
   }
   const payAmountNum = Number(payAmount);
@@ -61,11 +73,13 @@ export async function POST(request) {
   if (website && !/^https?:\/\//i.test(website)) {
     return NextResponse.json({ error: "病院公式サイトURLは http:// または https:// から始めてください" }, { status: 400 });
   }
+  const trimmedPayNote = (payNote || "").trim();
+  const payText = buildPayText(payUnit, payAmountNum, trimmedPayNote);
 
   const info = db
     .prepare(
-      `INSERT INTO jobs (hospital_user_id, hospital_name, title, type, area, city, dept, date_text, work_date, work_date_ongoing, pay_text, pay_amount, desc, emergency_volume, outpatient_volume, night_duty_note, backup_note, hospital_website, access, confirmed_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`
+      `INSERT INTO jobs (hospital_user_id, hospital_name, title, type, area, city, dept, date_text, work_date, work_date_ongoing, pay_text, pay_unit, pay_amount, pay_note, desc, emergency_volume, outpatient_volume, night_duty_note, backup_note, hospital_website, access, confirmed_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`
     )
     .run(
       session.userId,
@@ -79,7 +93,9 @@ export async function POST(request) {
       workDateOngoing ? null : workDate,
       workDateOngoing ? 1 : 0,
       payText,
+      payUnit,
       payAmountNum,
+      trimmedPayNote || null,
       desc,
       (emergencyVolume || "").trim() || null,
       (outpatientVolume || "").trim() || null,

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import db from "@/lib/db";
 import { getSession } from "@/lib/session";
+import { buildPayText } from "@/lib/pricing";
+import { PAY_UNITS } from "@/lib/jobOptions";
 
 export async function PATCH(request, { params }) {
   const { id } = await params;
@@ -27,8 +29,9 @@ export async function PATCH(request, { params }) {
     dateText,
     workDate,
     workDateOngoing,
-    payText,
+    payUnit,
     payAmount,
+    payNote,
     desc,
     emergencyVolume,
     outpatientVolume,
@@ -37,7 +40,16 @@ export async function PATCH(request, { params }) {
     hospitalWebsite,
     access,
   } = body;
-  if (!title || !type || !area || !dept || (!dateText && !workDateOngoing) || (!workDate && !workDateOngoing) || !payText || !desc) {
+  if (
+    !title ||
+    !type ||
+    !area ||
+    !dept ||
+    (!dateText && !workDateOngoing) ||
+    (!workDate && !workDateOngoing) ||
+    !PAY_UNITS.includes(payUnit) ||
+    !desc
+  ) {
     return NextResponse.json({ error: "すべての項目を入力してください" }, { status: 400 });
   }
   const payAmountNum = Number(payAmount);
@@ -48,9 +60,11 @@ export async function PATCH(request, { params }) {
   if (website && !/^https?:\/\//i.test(website)) {
     return NextResponse.json({ error: "病院公式サイトURLは http:// または https:// から始めてください" }, { status: 400 });
   }
+  const trimmedPayNote = (payNote || "").trim();
+  const payText = buildPayText(payUnit, payAmountNum, trimmedPayNote);
 
   db.prepare(
-    `UPDATE jobs SET title = ?, type = ?, area = ?, city = ?, dept = ?, date_text = ?, work_date = ?, work_date_ongoing = ?, pay_text = ?, pay_amount = ?, desc = ?,
+    `UPDATE jobs SET title = ?, type = ?, area = ?, city = ?, dept = ?, date_text = ?, work_date = ?, work_date_ongoing = ?, pay_text = ?, pay_unit = ?, pay_amount = ?, pay_note = ?, desc = ?,
        emergency_volume = ?, outpatient_volume = ?, night_duty_note = ?, backup_note = ?, hospital_website = ?, access = ?,
        confirmed_at = datetime('now')
      WHERE id = ?`
@@ -64,7 +78,9 @@ export async function PATCH(request, { params }) {
     workDateOngoing ? null : workDate,
     workDateOngoing ? 1 : 0,
     payText,
+    payUnit,
     payAmountNum,
+    trimmedPayNote || null,
     desc,
     (emergencyVolume || "").trim() || null,
     (outpatientVolume || "").trim() || null,
