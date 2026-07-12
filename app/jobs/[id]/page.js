@@ -981,6 +981,9 @@ export default function JobDetailPage() {
                           ) : (
                             <p className="fee-note">運営より手数料 {formatYen(getFeeForJobType(job.type))} の請求書をお送りします。</p>
                           ))}
+                        <p className="fee-note" style={{ marginTop: 8 }}>
+                          この求人は自動では非公開になりません。応募の受付を終了したい場合は、上の「求人を取り下げる」から非公開にしてください。
+                        </p>
                       </>
                     )}
 
