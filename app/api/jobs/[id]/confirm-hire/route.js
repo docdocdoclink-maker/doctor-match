@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import db from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { sendMail } from "@/lib/mailer";
-import { getFeeForJobType, formatYen, getPaymentLinkForJobType } from "@/lib/pricing";
+import { getFeeForJobType, formatYen, getPaymentLinkForJobType, isFreeCampaignActive } from "@/lib/pricing";
 
 const APP_URL = process.env.APP_URL || "http://localhost:3000";
 
@@ -48,14 +48,19 @@ export async function POST(request, { params }) {
 
   const fee = getFeeForJobType(job.type);
   const paymentLink = getPaymentLinkForJobType(job.type);
+  const freeCampaign = isFreeCampaignActive();
   const hospital = db.prepare("SELECT * FROM users WHERE id = ?").get(session.userId);
   if (hospital?.email_notify) {
     sendMail({
       to: hospital.email,
-      subject: `【DocLink】${job.title} 成約のお手続きありがとうございます（手数料 ${formatYen(fee)}）`,
-      text: paymentLink
-        ? `成約確認ありがとうございます。手数料 ${formatYen(fee)} のお支払いを以下のリンクからお願いします。\n\n${paymentLink}\n\n求人ページ: ${APP_URL}/jobs/${id}`
-        : `成約確認ありがとうございます。手数料 ${formatYen(fee)} の請求書を追ってお送りします。\n\n求人ページ: ${APP_URL}/jobs/${id}`,
+      subject: freeCampaign
+        ? `【DocLink】${job.title} 成約のお手続きありがとうございます（キャンペーン中につき手数料無料）`
+        : `【DocLink】${job.title} 成約のお手続きありがとうございます（手数料 ${formatYen(fee)}）`,
+      text: freeCampaign
+        ? `成約確認ありがとうございます。今年度中はキャンペーンにより手数料は無料です。お支払いは不要です。\n\n求人ページ: ${APP_URL}/jobs/${id}`
+        : paymentLink
+          ? `成約確認ありがとうございます。手数料 ${formatYen(fee)} のお支払いを以下のリンクからお願いします。\n\n${paymentLink}\n\n求人ページ: ${APP_URL}/jobs/${id}`
+          : `成約確認ありがとうございます。手数料 ${formatYen(fee)} の請求書を追ってお送りします。\n\n求人ページ: ${APP_URL}/jobs/${id}`,
     }).catch(() => {});
   }
 

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import db from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { sendMail } from "@/lib/mailer";
-import { getFeeForJobType, formatYen, getPaymentLinkForJobType } from "@/lib/pricing";
+import { getFeeForJobType, formatYen, getPaymentLinkForJobType, isFreeCampaignActive } from "@/lib/pricing";
 
 const APP_URL = process.env.APP_URL || "http://localhost:3000";
 
@@ -84,6 +84,7 @@ export async function POST(request, { params }) {
 
   const fee = getFeeForJobType(job.type);
   const paymentLink = getPaymentLinkForJobType(job.type);
+  const freeCampaign = isFreeCampaignActive();
   const hospital = db.prepare("SELECT * FROM users WHERE id = ?").get(job.hospital_user_id);
   if (hospital?.email_notify) {
     const reportedByDoctor = session.role === "doctor";
@@ -91,12 +92,16 @@ export async function POST(request, { params }) {
       to: hospital.email,
       subject: reportedByDoctor
         ? `【DocLink】${job.title} で医師から成約報告がありました（要確認）`
-        : `【DocLink】${job.title} 成約のお手続きありがとうございます（手数料 ${formatYen(fee)}）`,
+        : freeCampaign
+          ? `【DocLink】${job.title} 成約のお手続きありがとうございます（キャンペーン中につき手数料無料）`
+          : `【DocLink】${job.title} 成約のお手続きありがとうございます（手数料 ${formatYen(fee)}）`,
       text: reportedByDoctor
         ? `医師が「採用された」と報告しました。内容に相違なければ求人ページの「採用について確認する」からご確認ください。\n\n求人ページ: ${APP_URL}/jobs/${id}`
-        : paymentLink
-          ? `成約報告ありがとうございます。手数料 ${formatYen(fee)} のお支払いを以下のリンクからお願いします。\n\n${paymentLink}\n\n求人ページ: ${APP_URL}/jobs/${id}`
-          : `成約報告ありがとうございます。手数料 ${formatYen(fee)} の請求書を追ってお送りします。\n\n求人ページ: ${APP_URL}/jobs/${id}`,
+        : freeCampaign
+          ? `成約報告ありがとうございます。今年度中はキャンペーンにより手数料は無料です。お支払いは不要です。\n\n求人ページ: ${APP_URL}/jobs/${id}`
+          : paymentLink
+            ? `成約報告ありがとうございます。手数料 ${formatYen(fee)} のお支払いを以下のリンクからお願いします。\n\n${paymentLink}\n\n求人ページ: ${APP_URL}/jobs/${id}`
+            : `成約報告ありがとうございます。手数料 ${formatYen(fee)} の請求書を追ってお送りします。\n\n求人ページ: ${APP_URL}/jobs/${id}`,
     }).catch(() => {});
   }
 
