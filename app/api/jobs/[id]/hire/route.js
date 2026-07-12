@@ -41,8 +41,13 @@ export async function POST(request, { params }) {
     hiredDoctorUserId = session.userId;
   }
 
+  // Also closes the listing — a filled position shouldn't keep showing up
+  // in the public job search as if it were still open. Chat is unaffected
+  // either way (see app/api/jobs/[id]/messages/route.js, which doesn't
+  // check closed at all), so this doesn't block the parties from still
+  // talking after the fact.
   db.prepare(
-    "UPDATE jobs SET hired = 1, hired_at = datetime('now', 'localtime'), hired_doctor_user_id = ?, hired_reported_by = ? WHERE id = ?"
+    "UPDATE jobs SET hired = 1, hired_at = datetime('now', 'localtime'), hired_doctor_user_id = ?, hired_reported_by = ?, closed = 1 WHERE id = ?"
   ).run(hiredDoctorUserId, session.role, id);
 
   // Tell the hired doctor apart from everyone else who was just talking to

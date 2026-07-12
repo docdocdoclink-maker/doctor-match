@@ -176,14 +176,13 @@ export default function JobDetailPage() {
   }, [messages]);
 
   async function loadJob() {
-    const res = await fetch("/api/jobs");
-    const data = await res.json();
-    const found = (data.jobs || []).find((j) => String(j.id) === String(id));
-    if (!found) {
+    const res = await fetch(`/api/jobs/${id}`);
+    if (!res.ok) {
       setNotFound(true);
       return;
     }
-    setJob(found);
+    const data = await res.json();
+    setJob(data.job);
   }
 
   async function loadConversations() {

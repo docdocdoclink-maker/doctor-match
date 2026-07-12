@@ -39,8 +39,11 @@ export async function POST(request, { params }) {
     return NextResponse.json({ error: "相手が既に確認済みのため取り消せません。お問い合わせフォームからご連絡ください。" }, { status: 409 });
   }
 
+  // Reopens the listing too, undoing the auto-close from the hire route —
+  // if the hospital still wants it closed for some other reason, they can
+  // just close it again via the normal 求人を取り下げる action.
   db.prepare(
-    "UPDATE jobs SET hired = 0, hired_at = NULL, hired_doctor_user_id = NULL, hired_reported_by = NULL WHERE id = ?"
+    "UPDATE jobs SET hired = 0, hired_at = NULL, hired_doctor_user_id = NULL, hired_reported_by = NULL, closed = 0 WHERE id = ?"
   ).run(id);
 
   if (doctorUserId) {

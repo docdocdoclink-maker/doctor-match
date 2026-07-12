@@ -4,6 +4,19 @@ import { getSession } from "@/lib/session";
 import { buildPayText } from "@/lib/pricing";
 import { PAY_UNITS } from "@/lib/jobOptions";
 
+// No closed/role filtering here, unlike GET /api/jobs (the browse listing)
+// — a closed or hired posting shouldn't show up in search, but anyone who
+// already has the link (e.g. a doctor mid-conversation on it) still needs
+// to be able to open the page and keep chatting.
+export async function GET(request, { params }) {
+  const { id } = await params;
+  const job = db.prepare("SELECT * FROM jobs WHERE id = ?").get(id);
+  if (!job) {
+    return NextResponse.json({ error: "求人が見つかりません" }, { status: 404 });
+  }
+  return NextResponse.json({ job });
+}
+
 export async function PATCH(request, { params }) {
   const { id } = await params;
   const session = await getSession();
