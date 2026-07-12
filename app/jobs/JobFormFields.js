@@ -133,6 +133,20 @@ export default function JobFormFields({ form, update }) {
         業務内容
         <textarea value={form.desc} onChange={(e) => update("desc", e.target.value)} placeholder="業務内容を記載してください" required />
       </label>
+      <label className="field">
+        募集人数（任意）
+        <input
+          type="number"
+          min="1"
+          step="1"
+          value={form.headcount}
+          onChange={(e) => update("headcount", e.target.value)}
+          placeholder="例）2"
+        />
+        <span className="fee-note" style={{ margin: "4px 0 0" }}>
+          空欄のままでも掲載できます。人数を指定すると求人ページに表示されます。
+        </span>
+      </label>
 
       <div style={{ borderTop: "1px solid #eee", margin: "18px 0 14px", paddingTop: 14 }}>
         <p style={{ fontSize: 12, color: "#6b7280", margin: "0 0 12px" }}>

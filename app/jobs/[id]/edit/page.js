@@ -19,6 +19,7 @@ function jobToForm(job) {
     payAmount: job.pay_amount ?? "",
     payNote: job.pay_note || "",
     desc: job.desc,
+    headcount: job.headcount ?? "",
     emergencyVolume: job.emergency_volume || "",
     outpatientVolume: job.outpatient_volume || "",
     nightDutyNote: job.night_duty_note || "",

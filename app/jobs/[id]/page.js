@@ -455,6 +455,15 @@ export default function JobDetailPage() {
                   <th>業務内容</th>
                   <td>{job.desc}</td>
                 </tr>
+                {!!job.headcount && (
+                  <tr>
+                    <th>募集人数</th>
+                    <td>
+                      {job.headcount}名
+                      {isOwnerHospital && `（うち採用済み: ${conversations.filter((c) => c.hired).length}名）`}
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
 

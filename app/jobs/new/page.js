@@ -26,6 +26,7 @@ export default function NewJobPage() {
     payAmount: "",
     payNote: "",
     desc: "",
+    headcount: "",
     emergencyVolume: "",
     outpatientVolume: "",
     nightDutyNote: "",

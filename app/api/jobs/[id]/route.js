@@ -46,6 +46,7 @@ export async function PATCH(request, { params }) {
     payAmount,
     payNote,
     desc,
+    headcount,
     emergencyVolume,
     outpatientVolume,
     nightDutyNote,
@@ -69,6 +70,13 @@ export async function PATCH(request, { params }) {
   if (!Number.isFinite(payAmountNum) || payAmountNum < 0) {
     return NextResponse.json({ error: "報酬額（万円）は0以上の数値で入力してください" }, { status: 400 });
   }
+  let headcountNum = null;
+  if (headcount !== "" && headcount != null) {
+    headcountNum = Number(headcount);
+    if (!Number.isInteger(headcountNum) || headcountNum < 1) {
+      return NextResponse.json({ error: "募集人数は1以上の整数で入力してください" }, { status: 400 });
+    }
+  }
   const website = (hospitalWebsite || "").trim();
   if (website && !/^https?:\/\//i.test(website)) {
     return NextResponse.json({ error: "病院公式サイトURLは http:// または https:// から始めてください" }, { status: 400 });
@@ -77,7 +85,7 @@ export async function PATCH(request, { params }) {
   const payText = buildPayText(payUnit, payAmountNum, trimmedPayNote);
 
   db.prepare(
-    `UPDATE jobs SET title = ?, type = ?, area = ?, city = ?, dept = ?, date_text = ?, work_date = ?, work_date_ongoing = ?, pay_text = ?, pay_unit = ?, pay_amount = ?, pay_note = ?, desc = ?,
+    `UPDATE jobs SET title = ?, type = ?, area = ?, city = ?, dept = ?, date_text = ?, work_date = ?, work_date_ongoing = ?, pay_text = ?, pay_unit = ?, pay_amount = ?, pay_note = ?, desc = ?, headcount = ?,
        emergency_volume = ?, outpatient_volume = ?, night_duty_note = ?, backup_note = ?, hospital_website = ?, access = ?,
        confirmed_at = datetime('now')
      WHERE id = ?`
@@ -95,6 +103,7 @@ export async function PATCH(request, { params }) {
     payAmountNum,
     trimmedPayNote || null,
     desc,
+    headcountNum,
     (emergencyVolume || "").trim() || null,
     (outpatientVolume || "").trim() || null,
     (nightDutyNote || "").trim() || null,
