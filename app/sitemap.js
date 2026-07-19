@@ -1,4 +1,5 @@
 import db from "@/lib/db";
+import { listColumns } from "@/lib/columns";
 
 // Next.js tries to prerender this route at build time by default, but the
 // build container only ever has the in-memory placeholder DB (see
@@ -23,9 +24,18 @@ export default function sitemap() {
     priority: 0.8,
   }));
 
+  const columnEntries = listColumns().map((c) => ({
+    url: `${APP_URL}/column/${c.slug}`,
+    lastModified: `${c.date}T00:00:00+09:00`,
+    changeFrequency: "monthly",
+    priority: 0.6,
+  }));
+
   return [
     { url: APP_URL, changeFrequency: "weekly", priority: 1 },
     { url: `${APP_URL}/jobs`, changeFrequency: "daily", priority: 0.9 },
+    { url: `${APP_URL}/column`, changeFrequency: "weekly", priority: 0.7 },
     ...jobEntries,
+    ...columnEntries,
   ];
 }

@@ -14,7 +14,7 @@ export default function robots() {
   return {
     rules: {
       userAgent: "*",
-      allow: ["/", "/jobs", "/jobs/*"],
+      allow: ["/", "/jobs", "/jobs/*", "/column", "/column/*"],
       disallow: ["/jobs/new", "/jobs/*/edit", "/account", "/admin", "/inbox", "/api"],
     },
     sitemap: `${APP_URL}/sitemap.xml`,
