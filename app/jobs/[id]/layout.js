@@ -12,6 +12,17 @@ const SCHEMA_EMPLOYMENT_TYPE = {
   スポット: "CONTRACTOR",
 };
 
+// schema.org unitText values for baseSalary, from our pay_unit labels. Jobs
+// whose rows predate the pay_unit column have no reliable unit — those omit
+// baseSalary entirely rather than guess (a wrong salary period is worse for
+// a doctor scanning Google's job results than no salary at all).
+const SCHEMA_SALARY_UNIT = {
+  日当: "DAY",
+  月給: "MONTH",
+  時給: "HOUR",
+  年俸: "YEAR",
+};
+
 function toIsoDate(sqliteText) {
   if (!sqliteText) return undefined;
   return new Date(sqliteText.replace(" ", "T") + "Z").toISOString();
@@ -47,36 +58,57 @@ export default async function JobLayout({ children, params }) {
   const { id } = await params;
   const job = getJob(id);
 
+  // A one-day posting stops being valid once its work date has passed;
+  // standing/recurring postings (work_date_ongoing) have no natural expiry,
+  // so they omit validThrough and stay live until the hospital closes them.
+  const validThrough =
+    job && !job.work_date_ongoing && job.work_date
+      ? `${job.work_date}T23:59:59+09:00`
+      : undefined;
+  const salaryUnit = job && SCHEMA_SALARY_UNIT[job.pay_unit];
+
   const jsonLd = job && {
     "@context": "https://schema.org",
     "@type": "JobPosting",
     title: job.title,
     description: job.desc,
+    identifier: {
+      "@type": "PropertyValue",
+      name: "DocLink",
+      value: String(job.id),
+    },
     datePosted: toIsoDate(job.created_at),
+    ...(validThrough && { validThrough }),
     employmentType: SCHEMA_EMPLOYMENT_TYPE[job.type] || "OTHER",
     hiringOrganization: {
       "@type": "Organization",
       name: job.hospital_name,
+      ...(job.hospital_website && { sameAs: job.hospital_website }),
     },
     jobLocation: {
       "@type": "Place",
       address: {
         "@type": "PostalAddress",
+        ...(job.city && { addressLocality: job.city }),
         addressRegion: job.area,
         addressCountry: "JP",
       },
     },
-    ...(job.pay_amount != null && {
-      baseSalary: {
-        "@type": "MonetaryAmount",
-        currency: "JPY",
-        value: {
-          "@type": "QuantitativeValue",
-          value: job.pay_amount * 10000,
-          unitText: "DAY",
+    // Applying happens on this page itself (signup + chat), not via a
+    // separate ATS redirect.
+    directApply: true,
+    ...(job.pay_amount != null &&
+      salaryUnit && {
+        baseSalary: {
+          "@type": "MonetaryAmount",
+          currency: "JPY",
+          value: {
+            "@type": "QuantitativeValue",
+            value: job.pay_amount * 10000,
+            unitText: salaryUnit,
+          },
         },
-      },
-    }),
+      }),
   };
 
   return (
