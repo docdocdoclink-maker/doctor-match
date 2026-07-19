@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Topbar from "../../components/Topbar";
-import { getFeeForJobType, formatYen, getPaymentLinkForJobType, isFreeCampaignActive } from "../../../lib/pricing";
+import { getFeeForJobType, formatYen, getPaymentLinkForJobType } from "../../../lib/pricing";
 import { PREFECTURES, SHIFT_TYPES, WEEKDAYS, SKILLS } from "../../../lib/jobOptions";
 import { ALL_DEPTS } from "../../../lib/depts";
 
@@ -122,6 +122,7 @@ export default function JobDetailPage() {
   const [hired, setHired] = useState(false);
   const [hiredAt, setHiredAt] = useState(null);
   const [hiredReportedBy, setHiredReportedBy] = useState(null);
+  const [feeWaived, setFeeWaived] = useState(false);
   const [confirmingHire, setConfirmingHire] = useState(false);
   const [cancelingHire, setCancelingHire] = useState(false);
   const [cancelHireError, setCancelHireError] = useState("");
@@ -146,29 +147,35 @@ export default function JobDetailPage() {
   const threadRef = useRef(null);
   const fileInputRef = useRef(null);
 
+  // Navigating from one job page to another doesn't remount this component
+  // (same route pattern, just a different [id]), so thread state from the
+  // previous job would otherwise stick around. Reset it during render (the
+  // React-documented "adjusting state when a prop changes" pattern) instead
+  // of in an effect, which would flash the stale thread for one paint.
+  const [renderedId, setRenderedId] = useState(id);
+  if (renderedId !== id) {
+    setRenderedId(id);
+    setActiveDoctorId(null);
+    setMessages([]);
+    setConversations([]);
+  }
+  // A doctor's thread is always their own — derive it as soon as the session
+  // arrives rather than syncing it via an effect.
+  if (session?.role === "doctor" && activeDoctorId !== session.userId) {
+    setActiveDoctorId(session.userId);
+  }
+
   useEffect(() => {
     fetch("/api/auth/me")
       .then((r) => r.json())
       .then(setSession);
     loadJob();
     fetch(`/api/jobs/${id}/view`, { method: "POST" }).catch(() => {});
-    // Navigating from one job page to another doesn't remount this
-    // component (same route pattern, just a different [id]), so without
-    // this, activeDoctorId/messages from the previous job would otherwise
-    // stick around — for a doctor it's literally the same value
-    // (their own user id) both times, so the effect below wouldn't have
-    // re-run on its own.
-    setActiveDoctorId(null);
-    setMessages([]);
-    setConversations([]);
   }, [id]);
 
   useEffect(() => {
-    if (!session) return;
-    if (session.role === "hospital") {
+    if (session?.role === "hospital") {
       loadConversations();
-    } else if (session.role === "doctor") {
-      setActiveDoctorId(session.userId);
     }
   }, [session, id]);
 
@@ -214,6 +221,7 @@ export default function JobDetailPage() {
     setHired(!!data.hired);
     setHiredAt(data.hiredAt || null);
     setHiredReportedBy(data.hiredReportedBy || null);
+    setFeeWaived(!!data.feeWaived);
   }
 
   async function handleSend(e) {
@@ -340,7 +348,7 @@ export default function JobDetailPage() {
       setBroadcastSending(false);
       return;
     }
-    setBroadcastResult(data.matchedCount);
+    setBroadcastResult({ matchedCount: data.matchedCount, skippedCount: data.skippedCount });
     setBroadcastMessage("");
     setBroadcastSending(false);
     await loadConversations();
@@ -472,9 +480,7 @@ export default function JobDetailPage() {
             {isDoctor && !hired && (
               <div style={{ borderTop: "1px solid #eee", paddingTop: 16 }}>
                 <p className="fee-note">
-                  {isFreeCampaignActive()
-                    ? "※ 今年度中は病院側の手数料も無料キャンペーン中です（医師側は元々完全無料）"
-                    : "※ 成約時のみ病院側に手数料が発生します（医師側は完全無料）"}
+                  ※ 病院側は初回契約（1件目の成約）のみ手数料無料、2件目以降は成約時に定額の手数料が発生します（医師側は完全無料）
                 </p>
               </div>
             )}
@@ -588,7 +594,9 @@ export default function JobDetailPage() {
                     {broadcastError && <div className="error-box" style={{ fontSize: 12 }}>{broadcastError}</div>}
                     {broadcastResult !== null && (
                       <div style={{ fontSize: 12, color: "#0a7d3c", marginBottom: 8 }}>
-                        ✓ {broadcastResult}人の医師に送信しました
+                        ✓ {broadcastResult.matchedCount}人の医師に送信しました
+                        {broadcastResult.skippedCount > 0 &&
+                          `(直近7日以内に他の求人で連絡済みのため${broadcastResult.skippedCount}人はスキップしました)`}
                       </div>
                     )}
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
@@ -919,8 +927,8 @@ export default function JobDetailPage() {
                     )}
                     <p className="fee-note">
                       {isOwnerHospital
-                        ? isFreeCampaignActive()
-                          ? "🎉 今年度中（2027年3月31日まで）はキャンペーンにより手数料は無料です。"
+                        ? !session.firstHireFeeUsed
+                          ? "🎉 初回契約（1件目の成約）特典により、この成約の手数料は無料です。"
                           : `成約報告をすると、運営から手数料 ${formatYen(getFeeForJobType(job.type))} の請求書をお送りします。`
                         : "※ 手数料が発生するのは病院側のみです。医師の利用は登録・閲覧・応募・成約を通じて常に無料です。"}
                     </p>
@@ -960,9 +968,9 @@ export default function JobDetailPage() {
                           </div>
                         )}
                         {(hiredReportedBy === "hospital" || hireConfirmedByHospital) &&
-                          (isFreeCampaignActive() ? (
+                          (feeWaived ? (
                             <p className="fee-note">
-                              🎉 今年度中（2027年3月31日まで）はキャンペーンにより手数料は無料です。お支払いは不要です。
+                              🎉 初回契約特典により、この成約の手数料は無料です。お支払いは不要です。
                             </p>
                           ) : getPaymentLinkForJobType(job.type) ? (
                             <p className="fee-note">

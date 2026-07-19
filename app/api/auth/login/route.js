@@ -5,7 +5,12 @@ import { getSession } from "@/lib/session";
 import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
 
 export async function POST(request) {
-  const { email, password } = await request.json();
+  const body = await request.json().catch(() => ({}));
+  const email = (body.email || "").toString().trim();
+  const password = (body.password || "").toString();
+  if (!email || !password) {
+    return NextResponse.json({ error: "メールアドレスとパスワードを入力してください" }, { status: 400 });
+  }
 
   const rate = checkRateLimit(`login:${getClientIp(request)}:${email}`, { max: 10, windowMs: 15 * 60 * 1000 });
   if (!rate.allowed) {

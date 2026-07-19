@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Topbar from "../../components/Topbar";
 import JobFormFields from "../JobFormFields";
-import { isFreeCampaignActive } from "../../../lib/pricing";
 import { DEPT_CATEGORIES } from "../../../lib/depts";
 
 export default function NewJobPage() {
@@ -93,14 +92,14 @@ export default function NewJobPage() {
           <h1 style={{ fontSize: 20, margin: "0 0 20px" }}>求人を掲載する（無料）</h1>
           {error && <div className="error-box">{error}</div>}
           <form onSubmit={handleSubmit}>
-            <JobFormFields form={form} update={update} />
+            <JobFormFields form={form} update={update} firstHireFeeAvailable={!session.firstHireFeeUsed} />
 
             <button type="submit" className="btn-primary" disabled={submitting}>
               {submitting ? "掲載中..." : "掲載する"}
             </button>
             <p className="fee-note">
-              {isFreeCampaignActive()
-                ? "掲載無料。今年度中（2027年3月31日まで）はキャンペーンとして成約手数料も無料です（通常はスポット・当直5,000円／非常勤10,000円／常勤20,000円）。"
+              {!session.firstHireFeeUsed
+                ? "掲載無料。初回契約（1件目の成約）は手数料も無料です（2件目以降はスポット・当直5,000円／非常勤10,000円／常勤20,000円）。"
                 : "掲載無料。採用が決まった場合のみ手数料が発生します（スポット・当直5,000円／非常勤10,000円／常勤20,000円）。"}
             </p>
           </form>

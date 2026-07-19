@@ -46,3 +46,6 @@ next-env.d.ts
 *.db-wal
 *.db-shm
 /uploads/
+
+# Business/filing documents — not app code
+特定募集情報等提供事業_届出下書き.md

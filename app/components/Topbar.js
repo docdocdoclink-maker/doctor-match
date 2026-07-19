@@ -11,11 +11,15 @@ import WelcomeModal from "./WelcomeModal";
 export default function Topbar({ session, jobSeeking: jobSeekingProp, onJobSeekingChange }) {
   const router = useRouter();
   const [unread, setUnread] = useState(0);
-  const [localJobSeeking, setLocalJobSeeking] = useState(true);
+  // Uncontrolled mode: the session's own value is the source of truth until
+  // the user toggles it here (localOverride) — derived, not synced via effect.
+  const [localOverride, setLocalOverride] = useState(null);
   const [jobSeekingBusy, setJobSeekingBusy] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const isControlled = jobSeekingProp !== undefined;
-  const jobSeeking = isControlled ? jobSeekingProp : localJobSeeking;
+  const jobSeeking = isControlled
+    ? jobSeekingProp
+    : localOverride ?? (session?.role === "doctor" ? !!session.jobSeeking : true);
 
   useEffect(() => {
     if (!session?.loggedIn) return;
@@ -24,10 +28,6 @@ export default function Topbar({ session, jobSeeking: jobSeekingProp, onJobSeeki
       .then((d) => setUnread(d.unreadTotal || 0))
       .catch(() => {});
   }, [session?.loggedIn]);
-
-  useEffect(() => {
-    if (!isControlled && session?.role === "doctor") setLocalJobSeeking(session.jobSeeking);
-  }, [session?.role, session?.jobSeeking, isControlled]);
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -45,7 +45,7 @@ export default function Topbar({ session, jobSeeking: jobSeekingProp, onJobSeeki
     });
     if (res.ok) {
       if (isControlled) onJobSeekingChange?.(next);
-      else setLocalJobSeeking(next);
+      else setLocalOverride(next);
     }
     setJobSeekingBusy(false);
   }

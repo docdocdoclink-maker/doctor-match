@@ -80,6 +80,7 @@ export async function GET(request, { params }) {
     hired: !!conv?.hired,
     hiredAt: conv?.hired_at || null,
     hiredReportedBy: conv?.hired_reported_by || null,
+    feeWaived: !!conv?.fee_waived,
   });
 }
 
@@ -158,6 +159,22 @@ export async function POST(request, { params }) {
   }
   if (session.role === "hospital" && job.hospital_user_id !== session.userId) {
     return NextResponse.json({ error: "権限がありません" }, { status: 403 });
+  }
+
+  // A hospital can only ever REPLY within an existing thread — one a doctor
+  // opened by messaging them, or one their own broadcast created. Creating a
+  // brand-new conversation toward an arbitrary doctorId here would let a
+  // hospital cold-contact a chosen doctor directly, bypassing the doctor's
+  // job_seeking opt-out, the broadcast rate limits, and the "hospital never
+  // picks specific job seekers" line that keeps DocLink a 募集情報等提供事業
+  // (see the broadcast route). The UI never does this; this guards the API.
+  if (session.role === "hospital") {
+    const existingConv = db
+      .prepare("SELECT job_id FROM conversations WHERE job_id = ? AND doctor_user_id = ?")
+      .get(id, doctorId);
+    if (!existingConv) {
+      return NextResponse.json({ error: "この医師との会話が見つかりません" }, { status: 403 });
+    }
   }
 
   // Ensure a conversation row exists for this (job, doctor) pair.

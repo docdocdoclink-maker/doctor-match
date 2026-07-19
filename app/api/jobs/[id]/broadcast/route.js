@@ -70,6 +70,22 @@ export async function POST(request, { params }) {
     return weekdayOk && skillOk;
   });
 
+  // Cross-job dedup: jobs.last_broadcast_at above only rate-limits repeat
+  // sends for THIS job. A hospital with several open postings could otherwise
+  // message the same doctor once per job per week. Skip anyone this hospital
+  // already broadcast to (via any job) in the last 7 days.
+  const recentlyContacted = new Set(
+    db
+      .prepare(
+        `SELECT doctor_user_id FROM broadcast_sends
+         WHERE hospital_user_id = ? AND sent_at > datetime('now', '-7 days')`
+      )
+      .all(session.userId)
+      .map((r) => r.doctor_user_id)
+  );
+  const toSend = matches.filter((c) => !recentlyContacted.has(c.id));
+  const skippedCount = matches.length - toSend.length;
+
   const insertConv = db.prepare(
     "INSERT INTO conversations (job_id, doctor_user_id, anonymous) VALUES (?, ?, 0) ON CONFLICT(job_id, doctor_user_id) DO NOTHING"
   );
@@ -80,10 +96,17 @@ export async function POST(request, { params }) {
     "UPDATE conversations SET last_read_by_hospital = datetime('now') WHERE job_id = ? AND doctor_user_id = ?"
   );
 
-  for (const doctor of matches) {
+  const recordSend = db.prepare(
+    `INSERT INTO broadcast_sends (hospital_user_id, doctor_user_id, sent_at)
+     VALUES (?, ?, datetime('now'))
+     ON CONFLICT(hospital_user_id, doctor_user_id) DO UPDATE SET sent_at = excluded.sent_at`
+  );
+
+  for (const doctor of toSend) {
     insertConv.run(id, doctor.id);
     insertMsg.run(id, doctor.id, session.userId, trimmedMessage);
     markRead.run(id, doctor.id);
+    recordSend.run(session.userId, doctor.id);
     if (doctor.email_notify) {
       sendMail({
         to: doctor.email,
@@ -95,5 +118,5 @@ export async function POST(request, { params }) {
 
   db.prepare("UPDATE jobs SET last_broadcast_at = datetime('now') WHERE id = ?").run(id);
 
-  return NextResponse.json({ matchedCount: matches.length });
+  return NextResponse.json({ matchedCount: toSend.length, skippedCount });
 }

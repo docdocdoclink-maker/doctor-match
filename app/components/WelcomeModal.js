@@ -1,6 +1,5 @@
 "use client";
 import { useState } from "react";
-import { isFreeCampaignActive } from "../../lib/pricing";
 
 // reopenable: true when opened on demand from the topbar's "使い方" link,
 // after the user has already seen (and dismissed) this once. Skips the
@@ -69,9 +68,7 @@ export default function WelcomeModal({ session, onDismiss, reopened = false }) {
             </IntroItem>
             <IntroItem icon="💰" title="業界最安水準の手数料">
               成約時のみ・スポット5,000円／非常勤10,000円／常勤20,000円。
-              {isFreeCampaignActive() && (
-                <> 今年度中（2027年3月31日まで）はキャンペーンとしてこの手数料も無料です。</>
-              )}
+              {!session.firstHireFeeUsed && <> 初回契約（1件目の成約）はこの手数料も無料です。</>}
               {" "}その分を、ぜひ医師の待遇（給与・条件）に反映いただくようお願いします。
             </IntroItem>
           </div>

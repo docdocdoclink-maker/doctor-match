@@ -1,10 +1,13 @@
 import { DEPT_CATEGORIES } from "../../lib/depts";
 import { JOB_TYPES, PREFECTURES, PAY_UNITS } from "../../lib/jobOptions";
-import { getFeeForJobType, formatYen, isFreeCampaignActive } from "../../lib/pricing";
+import { getFeeForJobType, formatYen } from "../../lib/pricing";
 
 // Shared field set for both "post a new job" and "edit an existing job" —
 // the two forms are otherwise identical, only the submit action differs.
-export default function JobFormFields({ form, update }) {
+// firstHireFeeAvailable: whether THIS hospital account hasn't used its one
+// free first-hire yet (from session.firstHireFeeUsed) — the parent page
+// fetches the session, so it's passed in rather than computed here.
+export default function JobFormFields({ form, update, firstHireFeeAvailable }) {
   return (
     <>
       <label className="field">
@@ -21,8 +24,8 @@ export default function JobFormFields({ form, update }) {
           ))}
         </select>
         <span className="fee-note" style={{ margin: "4px 0 0" }}>
-          {isFreeCampaignActive() ? (
-            <>成約時の手数料: 0円（今年度中キャンペーン中・通常{formatYen(getFeeForJobType(form.type))}）</>
+          {firstHireFeeAvailable ? (
+            <>成約時の手数料: 0円（初回契約特典・2件目以降は{formatYen(getFeeForJobType(form.type))}）</>
           ) : (
             <>成約時の手数料: {formatYen(getFeeForJobType(form.type))}</>
           )}

@@ -144,7 +144,7 @@ export default function JobsPage() {
           </>
         ) : (
           <>
-            <h1 style={{ fontSize: 22, margin: "0 0 4px" }}>非常勤・当直バイト求人（関東）</h1>
+            <h1 style={{ fontSize: 22, margin: "0 0 4px" }}>非常勤・当直バイト求人</h1>
             <p style={{ color: "#6b7280", fontSize: 13, margin: "0 0 20px" }}>
               全ての求人を検索・閲覧できます。応募・連絡は病院と直接やり取りできます。
             </p>

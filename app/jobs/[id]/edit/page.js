@@ -110,7 +110,7 @@ export default function EditJobPage() {
           <h1 style={{ fontSize: 20, margin: "0 0 20px" }}>求人を編集する</h1>
           {error && <div className="error-box">{error}</div>}
           <form onSubmit={handleSubmit}>
-            <JobFormFields form={form} update={update} />
+            <JobFormFields form={form} update={update} firstHireFeeAvailable={!session.firstHireFeeUsed} />
 
             <button type="submit" className="btn-primary" disabled={submitting}>
               {submitting ? "保存中..." : "変更を保存する"}
