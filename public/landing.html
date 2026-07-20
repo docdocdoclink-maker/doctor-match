@@ -157,6 +157,15 @@ a { color: inherit; text-decoration: none; }
 .stat-label { font-size: 12.5px; color: #7c8aa0; margin-top: 8px; font-weight: 700; }
 
 .section { max-width: 1080px; margin: 0 auto; padding: 92px 24px; }
+
+/* Full-bleed tinted wash behind a .section — each echoes a tone already
+   used by that section's own cards, so the page reads as one coherent
+   palette instead of alternating white/colored blocks at random. Applied
+   to the <section> itself; .section (above) keeps centering the content. */
+.tint-blue { background: linear-gradient(180deg, #f2f7ff 0%, #ffffff 100%); }
+.tint-teal { background: linear-gradient(180deg, #eefaf7 0%, #ffffff 100%); }
+.tint-indigo { background: linear-gradient(180deg, #f5f4ff 0%, #ffffff 100%); }
+.tint-amber { background: linear-gradient(180deg, #fff9ef 0%, #ffffff 100%); }
 .section-head { text-align: center; max-width: 600px; margin: 0 auto 52px; }
 .section-tag {
   display: inline-block;
@@ -524,7 +533,7 @@ footer .badge {
   </div>
 </header>
 
-<section class="section" id="value">
+<section class="section tint-blue" id="value">
   <div class="section-head">
     <div class="section-tag blue">Why DocLink</div>
     <h2>働く人にも、雇う側にもやさしい理由</h2>
@@ -573,7 +582,7 @@ footer .badge {
   </div>
 </section>
 
-<section class="section" id="how">
+<section class="section tint-teal" id="how">
   <div class="section-head">
     <div class="section-tag blue">How it works</div>
     <h2>使い方はとてもシンプル</h2>
@@ -633,7 +642,7 @@ footer .badge {
   </div>
 </section>
 
-<section class="section" id="privacy">
+<section class="section tint-indigo" id="privacy">
   <div class="section-head">
     <div class="section-tag blue">Privacy First</div>
     <h2>医師の「知られたくない」を守る設計</h2>
@@ -663,7 +672,7 @@ footer .badge {
   </div>
 </section>
 
-<section class="section" id="column">
+<section class="section tint-amber" id="column">
   <div class="section-head">
     <div class="section-tag blue">Column</div>
     <h2>医師の働き方コラム</h2>
