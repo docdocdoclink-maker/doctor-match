@@ -198,6 +198,49 @@ a { color: inherit; text-decoration: none; }
 .value-card.c1 .value-icon { background: #1a56db; }
 .value-card.c2 .value-icon { background: #0d9488; }
 .value-card.c3 .value-icon { background: #f59e0b; }
+.value-card.c4 { background: linear-gradient(160deg, #f3efff, #fdfcff); }
+.value-card.c4 .value-icon { background: #7c3aed; }
+
+.privacy-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 22px;
+}
+/* In the privacy cards .big wraps whole phrases, not standout numbers —
+   keep the per-card accent color but render inline at body size. Scoped
+   with .value-card so this outweighs the block-level .value-card .big
+   rule defined further down. */
+.privacy-grid .value-card .big { display: inline; font-size: inherit; margin: 0; }
+.privacy-grid .value-card.c4 .big { color: #7c3aed; }
+@media (max-width: 760px) {
+  .privacy-grid { grid-template-columns: 1fr; }
+}
+
+.column-teaser { max-width: 640px; margin: 0 auto; text-align: center; }
+.column-featured {
+  display: block;
+  text-align: left;
+  text-decoration: none;
+  background: #fafbfd;
+  border: 1px solid #eef0f3;
+  border-radius: 18px;
+  padding: 26px 28px;
+  margin-bottom: 24px;
+  transition: box-shadow .15s ease;
+}
+.column-featured:hover { box-shadow: 0 10px 26px rgba(20,30,60,0.08); }
+.column-featured .ct-date { font-size: 12px; color: #9ca3af; margin-bottom: 6px; }
+.column-featured .ct-title { font-size: 17px; font-weight: 800; color: #0d1b33; line-height: 1.6; margin-bottom: 8px; }
+.column-featured .ct-desc { font-size: 13.5px; color: #5c6b80; line-height: 1.75; }
+.btn-outline {
+  background: #fff;
+  color: #1a56db;
+  border: 1.5px solid #c7dcff;
+  box-shadow: none;
+  font-size: 14px;
+  padding: 12px 26px;
+}
+.btn-outline:hover { background: #eef4ff; }
 .value-card h3 { font-size: 19px; margin: 0 0 12px; color: #0d1b33; font-weight: 800; }
 .value-card p { font-size: 14px; color: #5c6b80; line-height: 1.85; margin: 0; }
 .value-card .big { display: block; font-size: 22px; font-weight: 900; line-height: 1.4; margin: 8px 0; }
@@ -587,6 +630,52 @@ footer .badge {
         </div>
       </div>
     </div>
+  </div>
+</section>
+
+<section class="section" id="privacy">
+  <div class="section-head">
+    <div class="section-tag blue">Privacy First</div>
+    <h2>医師の「知られたくない」を守る設計</h2>
+    <p>転職・バイト探しは、職場に知られず静かに進めたいもの。DocLinkは医師側のプライバシーを最優先に設計しています。</p>
+  </div>
+  <div class="privacy-grid">
+    <div class="value-card c1">
+      <div class="value-icon">🕶️</div>
+      <h3>匿名のままやり取り開始</h3>
+      <p>チャットは初回から<span class="big">匿名がデフォルト</span>。名乗るかどうか・いつ名乗るかは、あなたがボタンひとつで決められます。</p>
+    </div>
+    <div class="value-card c2">
+      <div class="value-icon">📋</div>
+      <h3>希望条件は、見せたい病院にだけ</h3>
+      <p>エリア・形態・診療科などの希望条件とメモは、<span class="big">あなたが自分から連絡した病院にだけ</span>表示されます。プロフィールが一覧で公開されることはありません。</p>
+    </div>
+    <div class="value-card c3">
+      <div class="value-icon">📄</div>
+      <h3>書類の共有は会話ごとに自分で選ぶ</h3>
+      <p>履歴書・医師免許証は本人確認のためだけに提出。<span class="big">共有をオンにしない限り</span>、病院からあなたの書類は見えません。</p>
+    </div>
+    <div class="value-card c4">
+      <div class="value-icon">🛡️</div>
+      <h3>医師も病院も審査制</h3>
+      <p>医師・病院とも、<span class="big">運営が登録内容を確認してから</span>参加する審査制。実在確認のない相手とやり取りする心配はありません。</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="column">
+  <div class="section-head">
+    <div class="section-tag blue">Column</div>
+    <h2>医師の働き方コラム</h2>
+    <p>当直・非常勤バイトの実用情報や、紹介手数料の仕組みなど、現役医師の視点で発信しています。</p>
+  </div>
+  <div class="column-teaser">
+    <a href="/column/shokai-tesuryo-shikumi" class="column-featured">
+      <div class="ct-date">2026-07-20</div>
+      <div class="ct-title">医師紹介会社の手数料の仕組み — 病院は1人採用するのにいくら払っているのか</div>
+      <div class="ct-desc">厚労省データでは医師1人あたり平均98万円。紹介手数料の構造と、医師側への影響を現役医師の視点で整理します。</div>
+    </a>
+    <a href="/column" class="btn btn-outline">コラム一覧を見る →</a>
   </div>
 </section>
 
